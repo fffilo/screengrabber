@@ -18,6 +18,8 @@ const _ = Translation.translate;
 
 /**
  * Indicator constructor
+ *
+ * GNOME Screenshot indicator
  * extends PanelMenu.Button
  *
  * @param  {Object}
@@ -145,5 +147,259 @@ const Indicator = new Lang.Class({
     _handle_menu_item_preferences: function(actor, event) {
 
     },
+
+    /* --- */
+
+});
+
+/**
+ * Container constructor
+ *
+ * Shell.GenericContainer widget
+ * that can contain multiple
+ * absolute positioned childs
+ *
+ * @param  {Object}
+ * @return {Object}
+ */
+const Container = new Lang.Class({
+
+    Name: 'Ui.Container',
+
+    /**
+     * Constructor
+     *
+     * @return {Void}
+     */
+    _init: function() {
+        this.actor = new Shell.GenericContainer({
+            style_class: 'gnome-screenshot-container',
+            visible: false,
+            reactive: true,
+        });
+
+        this.actor.connect('get-preferred-width', Lang.bind(this, this._handle_get_preferred_width));
+        this.actor.connect('get-preferred-height', Lang.bind(this, this._handle_get_preferred_height));
+        this.actor.connect('allocate', Lang.bind(this, this._handle_allocate));
+    },
+
+    /**
+     * Destructor
+     *
+     * @return {Void}
+     */
+    destroy: function() {
+        this.actor.destroy();
+        // this.emit('destroy');
+    },
+
+    /**
+     * Signal get-preferred-width event handler
+     *
+     * @param  {Object} actor
+     * @param  {Number} size
+     * @param  {Object} alloc
+     * @return {Void}
+     */
+    _handle_get_preferred_width: function(actor, size, alloc) {
+        alloc.min_size = 0;
+        alloc.natural_size = size;
+    },
+
+    /**
+     * Signal get-preferred-height event handler
+     *
+     * @param  {Object} actor
+     * @param  {Number} size
+     * @param  {Object} alloc
+     * @return {Void}
+     */
+    _handle_get_preferred_height: function(actor, size, alloc) {
+        alloc.min_size = 0;
+        alloc.natural_size = size;
+    },
+
+    /**
+     * Signal allocate event handler
+     *
+     * @param  {Object} actor
+     * @param  {Object} box
+     * @param  {Number} flags
+     * @return {Void}
+     */
+    _handle_allocate: function(actor, box, flags) {
+        let children = actor.get_children();
+
+        for (let i = 0; i < children.length; i++) {
+            let child = children[i];
+            let position = child.get_position();
+            let size = child.get_size();
+            let abox = new Clutter.ActorBox({
+                x1: position[0],
+                y1: position[1],
+                x2: position[0] + size[0],
+                y2: position[1] + size[1],
+            });
+
+            child.allocate(abox, flags);
+        }
+    },
+
+    /**
+     * Add child
+     *
+     * @param {Object} actor
+     * @return {Void}
+     */
+    add: function(actor) {
+        this.actor.add_actor(actor);
+    },
+
+    /**
+     * Remove child
+     *
+     * @param {Object} actor
+     * @return {Void}
+     */
+    remove: function(actor) {
+        this.actor.remove_actor(actor);
+    },
+
+    /**
+     * Get size of actor
+     *
+     * @return {Object}
+     */
+    get_size: function() {
+        return this.actor.get_size();
+    },
+
+    /**
+     * Set size of actor
+     *
+     * @param  {Number} width
+     * @param  {Number} height
+     * @return {Void}
+     */
+    set_size: function(width, height) {
+        this.actor.set_size(width, height);
+    },
+
+    /**
+     * Get position of actor
+     *
+     * @return {Object}
+     */
+    get_position: function() {
+        return this.actor.get_position();
+    },
+
+    /**
+     * Set position of actor
+     *
+     * @param  {Number} left
+     * @param  {Number} top
+     * @return {Void}
+     */
+    set_position: function(left, top) {
+        this.actor.set_position(left, top);
+    },
+
+    /**
+     * Visible property getter
+     *
+     * @return {Boolean}
+     */
+    get visible() {
+        return this.actor.visible;
+    },
+
+    /**
+     * Visible property setter
+     *
+     * @param  {Boolean}
+     * @return {Void}
+     */
+    set visible(value) {
+        this.actor.visible = value;
+    },
+
+    /**
+     * Left property (position) getter
+     *
+     * @return {Number}
+     */
+    get left() {
+        return this.get_position()[0];
+    },
+
+    /**
+     * Left property (position) setter
+     *
+     * @params {Number}
+     * @return {Void}
+     */
+    set left(value) {
+        this.set_position(value, this.top);
+    },
+
+    /**
+     * Top property (position) getter
+     *
+     * @return {Number}
+     */
+    get top() {
+        return this.get_position()[1];
+    },
+
+    /**
+     * Top property (position) setter
+     *
+     * @params {Number}
+     * @return {Void}
+     */
+    set top(value) {
+        this.set_position(this.left, value);
+    },
+
+    /**
+     * Width property (size) getter
+     *
+     * @return {Number}
+     */
+    get width() {
+        return this.get_size()[0];
+    },
+
+    /**
+     * Width property (size) setter
+     *
+     * @params {Number}
+     * @return {Void}
+     */
+    set width(value) {
+        this.set_size(value, this.height);
+    },
+
+    /**
+     * Height property (size) getter
+     *
+     * @return {Number}
+     */
+    get height() {
+        return this.get_size()[1];
+    },
+
+    /**
+     * Height property (size) setter
+     *
+     * @params {Number}
+     * @return {Void}
+     */
+    set height(value) {
+        this.set_size(this.width, value);
+    },
+
+    /* --- */
 
 });

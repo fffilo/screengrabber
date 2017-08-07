@@ -126,7 +126,6 @@ const Indicator = new Lang.Class({
         this._grabber = new GrabberMonitor();
         this._grabber.connect('screenshot', this._handle_grabber_screenshot);
         this._grabber.connect('cancel', this._handle_grabber_cancel);
-        this._grabber.set_selection(10,20,30,40);
         this._grabber.visible = true;
     },
 
@@ -141,7 +140,6 @@ const Indicator = new Lang.Class({
         this._grabber = new GrabberWindow();
         this._grabber.connect('screenshot', this._handle_grabber_screenshot);
         this._grabber.connect('cancel', this._handle_grabber_cancel);
-        this._grabber.set_selection(10,20,30,40);
         this._grabber.visible = true;
     },
 
@@ -329,6 +327,7 @@ const Container = new Lang.Class({
     destroy: function() {
         this.actor.destroy();
         this.emit('destroy');
+        this.disconnectAll();
     },
 
     /**
@@ -567,6 +566,10 @@ const Grabber = new Lang.Class({
     _init: function() {
         this.parent();
         this.actor.add_style_class_name('gnome-screenshot-grabber');
+
+        this._refresh_windows();
+        this._refresh_monitors();
+        this._refresh_desktop();
         this.fullscreen();
 
         this.backgroundTop = new Container();
@@ -682,6 +685,7 @@ const Grabber = new Lang.Class({
         this.backgroundTop.visible = true;
 
         this.actor.add_style_class_name('gnome-screenshot-grabber-with-selection');
+        global.log("XXX", "set_selection", left, top, width, height);
     },
 
     /**
@@ -707,6 +711,7 @@ const Grabber = new Lang.Class({
         this.backgroundTop.visible = false;
 
         this.actor.remove_style_class_name('gnome-screenshot-grabber-with-selection');
+        global.log("XXX", "clear_selection");
     },
 
     /**
@@ -737,80 +742,83 @@ const Grabber = new Lang.Class({
      * @return {Void}
      */
     fullscreen: function() {
-        let desktop = this._get_desktop();
-        this._get_windows();
-
-        this.actor.set_position(desktop.left, desktop.top);
-        this.actor.set_size(desktop.width, desktop.height);
+        this.actor.set_position(this._desktop.left, this._desktop.top);
+        this.actor.set_size(this._desktop.width, this._desktop.height);
     },
 
     /**
-     * Get desktop position/size
-     * (include all monitors)
+     * Refresh desktop size
+     * (desktop position/size including
+     * all monitors)
      *
      * @return {Object}
      */
-    _get_desktop: function() {
-        let monitors = this._get_monitors();
-        let result = {
+    _refresh_desktop: function() {
+        this._desktop = {
             left: 0,
             top: 0,
             width: 0,
             height: 0,
         }
-        for (let i = 0; i < monitors.length; i++) {
-            result.left = Math.min(result.left, monitors[i].left);
-            result.top = Math.min(result.top, monitors[i].top);
-            result.width = Math.max(result.width, monitors[i].left + monitors[i].width);
-            result.height = Math.max(result.height, monitors[i].top + monitors[i].height);
-        }
 
-        return result;
+        for (let i = 0; i < this._monitors.length; i++) {
+            let monitor = this._monitors[i];
+
+            this._desktop.left = Math.min(this._desktop.left, monitor.left);
+            this._desktop.top = Math.min(this._desktop.top, monitor.top);
+            this._desktop.width = Math.max(this._desktop.width, monitor.left + monitor.width);
+            this._desktop.height = Math.max(this._desktop.height, monitor.top + monitor.height);
+        }
     },
 
     /**
-     * Get each monitor position/size
+     * Refresh monitor list
+     * (each monitor position/size)
      *
      * @return {Object}
      */
-    _get_monitors: function() {
-        let result = [];
+    _refresh_monitors: function() {
+        this._monitors = [];
 
         for (let i = 0; i < Main.layoutManager.monitors.length; i++) {
-            result.push({
+            this._monitors.push({
                 left: Main.layoutManager.monitors[i].x,
                 top: Main.layoutManager.monitors[i].y,
                 width: Main.layoutManager.monitors[i].width,
                 height: Main.layoutManager.monitors[i].height,
             });
         }
-
-        return result;
     },
 
     /**
-     * Get each window position/size
+     * Refresh windows list
+     * (each window position/size)
      *
      * @return {Object}
      */
-    _get_windows: function() {
-        let windows = global.get_window_actors();
-        let result = [];
+    _refresh_windows: function() {
+        this._windows = [];
+        let windows = global.get_window_actors()
+            .filter(function(actor) {
+                // to do: more filter?
+                return actor.visible;
+            })
+            .sort(function(a, b) {
+                return a.get_meta_window().get_layer() <= b.get_meta_window().get_layer();
+            });
 
         for (let i = 0; i < windows.length; i++) {
             let actor = windows[i];
-            let size = actor.get_size();
             let position = actor.get_position();
+            let size = actor.get_size();
 
-            result.push({
-                left: size[0],
-                top: size[1],
-                width: position[0],
-                height: position[1],
+            this._windows.push({
+                left: position[0],
+                top: position[1],
+                width: size[0],
+                height: size[1],
             });
         }
-
-        return result;
     },
 
     /* --- */
@@ -842,9 +850,74 @@ const GrabberMonitor = new Lang.Class({
         this.actor.add_style_class_name('.gnome-screenshot-grabber-monitor');
 
         // temporary cancel on click
-        this.actor.connect('button-press-event', Lang.bind(this, function() {
+        this.actor.connect('button-press-event', Lang.bind(this, this._handle_button_press_event));
+        this.actor.connect('enter-event', Lang.bind(this, this._handle_enter_event));
+        this.actor.connect('motion-event', Lang.bind(this, this._handle_motion_event));
+    },
+
+    _highlight: function(x, y) {
+        for (let i = 0; i < this._monitors.length; i++) {
+            let actor = this._monitors[i];
+            let hover = true
+                && x >= actor.left
+                && x <= actor.left + actor.width
+                && y >= actor.top
+                && y <= actor.top + actor.height;
+
+            if (hover)
+                return this.set_selection(actor.left, actor.top, actor.width, actor.height);
+        }
+
+        return this.clear_selection();
+    },
+
+    /**
+     * Signal button-press-event event handler
+     *
+     * @param  {Object} actor
+     * @param  {Number} size
+     * @param  {Object} alloc
+     * @return {Void}
+     */
+    _handle_button_press_event: function(actor, event) {
+        let type = event.type();
+        let button = event.get_button();
+        let selection = this.get_selection();
+
+        if (event.type() == Clutter.EventType.BUTTON_PRESS && button == 3) {
             this.cancel();
-        }));
+        }
+        else if (event.type() == Clutter.EventType.BUTTON_PRESS && button == 1 && selection) {
+            this.screenshot();
+        }
+    },
+
+    /**
+     * Signal enter-event event handler
+     *
+     * to do: this is not working???
+     *
+     * @param  {Object} actor
+     * @param  {Number} size
+     * @param  {Object} alloc
+     * @return {Void}
+     */
+    _handle_enter_event: function(actor, event) {
+        let [ x, y ] = event.get_coords();
+        this._highlight(x, y);
+    },
+
+    /**
+     * Signal motion-event event handler
+     *
+     * @param  {Object} actor
+     * @param  {Number} size
+     * @param  {Object} alloc
+     * @return {Void}
+     */
+    _handle_motion_event: function(actor, event) {
+        let [ x, y ] = event.get_coords();
+        this._highlight(x, y);
     },
 
     /* --- */
@@ -864,7 +937,7 @@ const GrabberMonitor = new Lang.Class({
 const GrabberWindow = new Lang.Class({
 
     Name: 'Ui.GrabberWindow',
-    Extends: Grabber,
+    Extends: GrabberMonitor,
 
     /**
      * Constructor
@@ -873,12 +946,24 @@ const GrabberWindow = new Lang.Class({
      */
     _init: function() {
         this.parent();
+        this.actor.remove_style_class_name('.gnome-screenshot-grabber-monitor');
         this.actor.add_style_class_name('.gnome-screenshot-grabber-window');
+    },
 
-        // temporary cancel on click
-        this.actor.connect('button-press-event', Lang.bind(this, function() {
-            this.cancel();
-        }));
+    _highlight: function(x, y) {
+        for (let i = 0; i < this._windows.length; i++) {
+            let actor = this._windows[i];
+            let hover = true
+                && x >= actor.left
+                && x <= actor.left + actor.width
+                && y >= actor.top
+                && y <= actor.top + actor.height;
+
+            if (hover)
+                return this.set_selection(actor.left, actor.top, actor.width, actor.height);
+        }
+
+        return this.clear_selection();
     },
 
     /* --- */

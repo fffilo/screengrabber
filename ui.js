@@ -10,7 +10,10 @@ const Main = imports.ui.main;
 const St = imports.gi.St;
 const Shell = imports.gi.Shell;
 const Clutter = imports.gi.Clutter;
+const GLib = imports.gi.GLib;
+const Gio = imports.gi.Gio;
 const Meta = imports.gi.Meta;
+const MessageTray = imports.ui.messageTray;
 const PanelMenu = imports.ui.panelMenu;
 const PopupMenu = imports.ui.popupMenu;
 const ExtensionUtils = imports.misc.extensionUtils;
@@ -54,9 +57,10 @@ const Indicator = new Lang.Class({
      * @return {Void}
      */
     _def: function() {
+        this.notification = new Notification();
+
         // to do:
         // settings
-        // notification
         // grabber
     },
 
@@ -107,8 +111,8 @@ const Indicator = new Lang.Class({
      */
     _handle_menu_item_desktop: function(actor, event) {
         this._grabber = new Grabber();
-        this._grabber.connect('screenshot', this._handle_grabber_screenshot);
-        this._grabber.connect('cancel', this._handle_grabber_cancel);
+        this._grabber.connect('screenshot', Lang.bind(this, this._handle_grabber_screenshot));
+        this._grabber.connect('cancel', Lang.bind(this, this._handle_grabber_cancel));
         this._grabber.actor.add_style_class_name('.gnome-screenshot-grabber-desktop');
         this._grabber.select_all();
         this._grabber.visible = true;
@@ -124,8 +128,8 @@ const Indicator = new Lang.Class({
      */
     _handle_menu_item_monitor: function(actor, event) {
         this._grabber = new GrabberMonitor();
-        this._grabber.connect('screenshot', this._handle_grabber_screenshot);
-        this._grabber.connect('cancel', this._handle_grabber_cancel);
+        this._grabber.connect('screenshot', Lang.bind(this, this._handle_grabber_screenshot));
+        this._grabber.connect('cancel', Lang.bind(this, this._handle_grabber_cancel));
         this._grabber.visible = true;
     },
 
@@ -138,8 +142,8 @@ const Indicator = new Lang.Class({
      */
     _handle_menu_item_window: function(actor, event) {
         this._grabber = new GrabberWindow();
-        this._grabber.connect('screenshot', this._handle_grabber_screenshot);
-        this._grabber.connect('cancel', this._handle_grabber_cancel);
+        this._grabber.connect('screenshot', Lang.bind(this, this._handle_grabber_screenshot));
+        this._grabber.connect('cancel', Lang.bind(this, this._handle_grabber_cancel));
         this._grabber.visible = true;
     },
 
@@ -152,8 +156,8 @@ const Indicator = new Lang.Class({
      */
     _handle_menu_item_selection: function(actor, event) {
         this._grabber = new GrabberSelection();
-        this._grabber.connect('screenshot', this._handle_grabber_screenshot);
-        this._grabber.connect('cancel', this._handle_grabber_cancel);
+        this._grabber.connect('screenshot', Lang.bind(this, this._handle_grabber_screenshot));
+        this._grabber.connect('cancel', Lang.bind(this, this._handle_grabber_cancel));
         this._grabber.set_selection(10,20,30,40);
         this._grabber.visible = true;
     },
@@ -177,10 +181,9 @@ const Indicator = new Lang.Class({
      * @return {Void}
      */
     _handle_grabber_screenshot: function(actor, event) {
-        // to do: create screenshot
-        global.log('XXX', '_handle_grabber_screenshot', JSON.stringify(event));
-
-        actor.cancel();
+        let [ handle, filename ] = GLib.file_open_tmp(null);
+        let screenshot = new Shell.Screenshot();
+        screenshot.screenshot_area(event.left, event.top, event.width, event.height, filename, Lang.bind(this, this._handle_screenshot_save));
     },
 
     /**
@@ -193,7 +196,43 @@ const Indicator = new Lang.Class({
     _handle_grabber_cancel: function(actor, event) {
         actor.destroy();
         this._grabber = null;
-    }
+    },
+
+    /**
+     * Screenshot callback event handler
+     *
+     * @param  {Object}  actor
+     * @param  {Boolean} result
+     * @param  {Object}  area
+     * @param  {String}  filename
+     * @return {Void}
+     */
+    _handle_screenshot_save: function(actor, result, area, filename) {
+        // to do: filename template from settings
+        let now = new Date();
+        let _Y = now.getFullYear();
+        let _m = ('0' + (now.getMonth() + 1)).substr(-2);
+        let _d = ('0' + now.getDate()).substr(-2);
+        let _H = ('0' + now.getHours()).substr(-2);
+        let _M = ('0' + now.getMinutes()).substr(-2);
+        let _S = ('0' + now.getSeconds()).substr(-2);
+
+        // move temp file to ~/Pictures
+        let src = filename;
+        let dst = 'Screenshot from %s-%s-%s %s-%s-%s'.format(_Y, _m, _d, _H, _M, _S);
+        dst = GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_PICTURES) + '/' + dst;
+        Gio.file_new_for_path(src).move(Gio.file_new_for_path(dst), Gio.FileCopyFlags.OVERWRITE, null, null);
+
+        // to do: upload file
+
+        // show notification
+        // to do: link destination
+        this.notification.show(Me.metadata.name, dst);
+
+        // clear grabber
+        this._grabber.cancel();
+    },
+
     /* --- */
 
 });

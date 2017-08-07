@@ -5,8 +5,12 @@
 
 // import modules
 const Lang = imports.lang;
+const Signals = imports.signals;
 const Main = imports.ui.main;
 const St = imports.gi.St;
+const Shell = imports.gi.Shell;
+const Clutter = imports.gi.Clutter;
+const Meta = imports.gi.Meta;
 const PanelMenu = imports.ui.panelMenu;
 const PopupMenu = imports.ui.popupMenu;
 const ExtensionUtils = imports.misc.extensionUtils;
@@ -53,6 +57,7 @@ const Indicator = new Lang.Class({
         // to do:
         // settings
         // notification
+        // grabber
     },
 
     /**
@@ -101,7 +106,13 @@ const Indicator = new Lang.Class({
      * @return {Void}
      */
     _handle_menu_item_desktop: function(actor, event) {
-
+        this._grabber = new Grabber();
+        this._grabber.connect('screenshot', this._handle_grabber_screenshot);
+        this._grabber.connect('cancel', this._handle_grabber_cancel);
+        this._grabber.actor.add_style_class_name('.gnome-screenshot-grabber-desktop');
+        this._grabber.select_all();
+        this._grabber.visible = true;
+        this._grabber.screenshot();
     },
 
     /**
@@ -112,7 +123,11 @@ const Indicator = new Lang.Class({
      * @return {Void}
      */
     _handle_menu_item_monitor: function(actor, event) {
-
+        this._grabber = new GrabberMonitor();
+        this._grabber.connect('screenshot', this._handle_grabber_screenshot);
+        this._grabber.connect('cancel', this._handle_grabber_cancel);
+        this._grabber.set_selection(10,20,30,40);
+        this._grabber.visible = true;
     },
 
     /**
@@ -123,7 +138,11 @@ const Indicator = new Lang.Class({
      * @return {Void}
      */
     _handle_menu_item_window: function(actor, event) {
-
+        this._grabber = new GrabberWindow();
+        this._grabber.connect('screenshot', this._handle_grabber_screenshot);
+        this._grabber.connect('cancel', this._handle_grabber_cancel);
+        this._grabber.set_selection(10,20,30,40);
+        this._grabber.visible = true;
     },
 
     /**
@@ -134,7 +153,11 @@ const Indicator = new Lang.Class({
      * @return {Void}
      */
     _handle_menu_item_selection: function(actor, event) {
-
+        this._grabber = new GrabberSelection();
+        this._grabber.connect('screenshot', this._handle_grabber_screenshot);
+        this._grabber.connect('cancel', this._handle_grabber_cancel);
+        this._grabber.set_selection(10,20,30,40);
+        this._grabber.visible = true;
     },
 
     /**
@@ -148,6 +171,31 @@ const Indicator = new Lang.Class({
 
     },
 
+    /**
+     * Grabber screenshot event handler
+     *
+     * @param  {Object} actor
+     * @param  {Object} event
+     * @return {Void}
+     */
+    _handle_grabber_screenshot: function(actor, event) {
+        // to do: create screenshot
+        global.log('XXX', '_handle_grabber_screenshot', JSON.stringify(event));
+
+        actor.cancel();
+    },
+
+    /**
+     * Grabber cancel event handler
+     *
+     * @param  {Object} actor
+     * @param  {Object} event
+     * @return {Void}
+     */
+    _handle_grabber_cancel: function(actor, event) {
+        actor.destroy();
+        this._grabber = null;
+    }
     /* --- */
 
 });
@@ -280,7 +328,7 @@ const Container = new Lang.Class({
      */
     destroy: function() {
         this.actor.destroy();
-        // this.emit('destroy');
+        this.emit('destroy');
     },
 
     /**
@@ -488,6 +536,383 @@ const Container = new Lang.Class({
      */
     set height(value) {
         this.set_size(this.width, value);
+    },
+
+    /* --- */
+
+});
+
+Signals.addSignalMethods(Container.prototype);
+
+/**
+ * Grabber constructor
+ *
+ * blank screen graber container
+ * (container with overlay and
+ * selection area)
+ *
+ * @param  {Object}
+ * @return {Object}
+ */
+const Grabber = new Lang.Class({
+
+    Name: 'Ui.Grabber',
+    Extends: Container,
+
+    /**
+     * Constructor
+     *
+     * @return {Void}
+     */
+    _init: function() {
+        this.parent();
+        this.actor.add_style_class_name('gnome-screenshot-grabber');
+        this.fullscreen();
+
+        this.backgroundTop = new Container();
+        this.backgroundTop.actor.add_style_class_name('gnome-screenshot-background');
+        this.backgroundTop.actor.reactive = false;
+        this.add(this.backgroundTop.actor);
+
+        this.backgroundRight = new Container();
+        this.backgroundRight.actor.add_style_class_name('gnome-screenshot-background');
+        this.backgroundRight.actor.reactive = false;
+        this.add(this.backgroundRight.actor);
+
+        this.backgroundBottom = new Container();
+        this.backgroundBottom.actor.add_style_class_name('gnome-screenshot-background');
+        this.backgroundBottom.actor.reactive = false;
+        this.add(this.backgroundBottom.actor);
+
+        this.backgroundLeft = new Container();
+        this.backgroundLeft.actor.add_style_class_name('gnome-screenshot-background');
+        this.backgroundLeft.actor.reactive = false;
+        this.add(this.backgroundLeft.actor);
+
+        this.selection = new Container();
+        this.selection.actor.add_style_class_name('gnome-screenshot-selection');
+        this.selection.actor.reactive = false;
+        this.add(this.selection.actor);
+
+        Main.uiGroup.add_actor(this.actor);
+    },
+
+    /**
+     * Destructor
+     *
+     * @return {Void}
+     */
+    destroy: function() {
+        Main.popModal(this.actor);
+        global.screen.set_cursor(Meta.Cursor.DEFAULT);
+        Main.uiGroup.remove_actor(this.actor);
+        this.parent();
+    },
+
+    /**
+     * Visible property setter
+     * (override)
+     *
+     * @param  {Boolean}
+     * @return {Void}
+     */
+    set visible(value) {
+        this.actor.visible = value;
+        global.screen.set_cursor(value ? Meta.Cursor.CROSSHAIR : Meta.Cursor.DEFAULT);
+        Main[value ? 'pushModal' : 'popModal'](this.actor);
+    },
+
+    /**
+     * Get current selection
+     * (false on no selection)
+     *
+     * @return {Void}
+     */
+    get_selection: function() {
+        if (!this.selection.visible)
+            return false;
+
+        return {
+            left: this.selection.left,
+            top: this.selection.top,
+            width: this.selection.width,
+            height: this.selection.height,
+        }
+    },
+
+    /**
+     * Set selection
+     *
+     * @param  {Number} left
+     * @param  {Number} top
+     * @param  {Number} width
+     * @param  {Number} height
+     * @return {Void}
+     */
+    set_selection: function(left, top, width, height) {
+        this.backgroundTop.left = 0;
+        this.backgroundTop.top = 0;
+        this.backgroundTop.width = this.width;
+        this.backgroundTop.height = top;
+
+        this.backgroundRight.left = left + width;
+        this.backgroundRight.top = top;
+        this.backgroundRight.width = this.width - this.backgroundRight.left;
+        this.backgroundRight.height = height;
+
+        this.backgroundBottom.left = 0;
+        this.backgroundBottom.top = top + height;
+        this.backgroundBottom.width = this.width;
+        this.backgroundBottom.height = this.height - this.backgroundBottom.top;
+
+        this.backgroundLeft.left = 0;
+        this.backgroundLeft.top = top;
+        this.backgroundLeft.width = left;
+        this.backgroundLeft.height = height;
+
+        this.selection.left = left;
+        this.selection.top = top;
+        this.selection.width = width;
+        this.selection.height = height;
+
+        this.selection.visible = true;
+        this.backgroundLeft.visible = true;
+        this.backgroundBottom.visible = true;
+        this.backgroundRight.visible = true;
+        this.backgroundTop.visible = true;
+
+        this.actor.add_style_class_name('gnome-screenshot-grabber-with-selection');
+    },
+
+    /**
+     * Set selection on entire
+     * container
+     *
+     * @return {Void}
+     */
+    select_all: function() {
+        this.set_selection(0, 0, this.width, this.height);
+    },
+
+    /**
+     * Clear selection
+     *
+     * @return {Void}
+     */
+    clear_selection: function() {
+        this.selection.visible = false;
+        this.backgroundLeft.visible = false;
+        this.backgroundBottom.visible = false;
+        this.backgroundRight.visible = false;
+        this.backgroundTop.visible = false;
+
+        this.actor.remove_style_class_name('gnome-screenshot-grabber-with-selection');
+    },
+
+    /**
+     * Emit screenshot signal
+     *
+     * @return {Void}
+     */
+    screenshot: function() {
+        let event = this.get_selection();
+        if (!event)
+            return;
+
+        this.emit('screenshot', event);
+    },
+
+    /**
+     * Emit cancel signal
+     *
+     * @return {Void}
+     */
+    cancel: function() {
+        this.emit('cancel', {});
+    },
+
+    /**
+     * Set actor size to fill desktop
+     *
+     * @return {Void}
+     */
+    fullscreen: function() {
+        let desktop = this._get_desktop();
+        this._get_windows();
+
+        this.actor.set_position(desktop.left, desktop.top);
+        this.actor.set_size(desktop.width, desktop.height);
+    },
+
+    /**
+     * Get desktop position/size
+     * (include all monitors)
+     *
+     * @return {Object}
+     */
+    _get_desktop: function() {
+        let monitors = this._get_monitors();
+        let result = {
+            left: 0,
+            top: 0,
+            width: 0,
+            height: 0,
+        }
+        for (let i = 0; i < monitors.length; i++) {
+            result.left = Math.min(result.left, monitors[i].left);
+            result.top = Math.min(result.top, monitors[i].top);
+            result.width = Math.max(result.width, monitors[i].left + monitors[i].width);
+            result.height = Math.max(result.height, monitors[i].top + monitors[i].height);
+        }
+
+        return result;
+    },
+
+    /**
+     * Get each monitor position/size
+     *
+     * @return {Object}
+     */
+    _get_monitors: function() {
+        let result = [];
+
+        for (let i = 0; i < Main.layoutManager.monitors.length; i++) {
+            result.push({
+                left: Main.layoutManager.monitors[i].x,
+                top: Main.layoutManager.monitors[i].y,
+                width: Main.layoutManager.monitors[i].width,
+                height: Main.layoutManager.monitors[i].height,
+            });
+        }
+
+        return result;
+    },
+
+    /**
+     * Get each window position/size
+     *
+     * @return {Object}
+     */
+    _get_windows: function() {
+        let windows = global.get_window_actors();
+        let result = [];
+
+        for (let i = 0; i < windows.length; i++) {
+            let actor = windows[i];
+            let size = actor.get_size();
+            let position = actor.get_position();
+
+            result.push({
+                left: size[0],
+                top: size[1],
+                width: position[0],
+                height: position[1],
+            });
+        }
+
+        return result;
+    },
+
+    /* --- */
+
+});
+
+/**
+ * Grabber Monitor constructor
+ *
+ * bind mouse hover on actor
+ * creating selection area
+ * over specific monitor
+ *
+ * @param  {Object}
+ * @return {Object}
+ */
+const GrabberMonitor = new Lang.Class({
+
+    Name: 'Ui.GrabberMonitor',
+    Extends: Grabber,
+
+    /**
+     * Constructor
+     *
+     * @return {Void}
+     */
+    _init: function() {
+        this.parent();
+        this.actor.add_style_class_name('.gnome-screenshot-grabber-monitor');
+
+        // temporary cancel on click
+        this.actor.connect('button-press-event', Lang.bind(this, function() {
+            this.cancel();
+        }));
+    },
+
+    /* --- */
+
+});
+
+/**
+ * Grabber Window constructor
+ *
+ * bind mouse hover on actor
+ * creating selection area
+ * over specific window
+ *
+ * @param  {Object}
+ * @return {Object}
+ */
+const GrabberWindow = new Lang.Class({
+
+    Name: 'Ui.GrabberWindow',
+    Extends: Grabber,
+
+    /**
+     * Constructor
+     *
+     * @return {Void}
+     */
+    _init: function() {
+        this.parent();
+        this.actor.add_style_class_name('.gnome-screenshot-grabber-window');
+
+        // temporary cancel on click
+        this.actor.connect('button-press-event', Lang.bind(this, function() {
+            this.cancel();
+        }));
+    },
+
+    /* --- */
+
+});
+
+/**
+ * Grabber Selection constructor
+ *
+ * bind mouse hover on actor
+ * allowing user to create
+ * selection area (drag)
+ *
+ * @param  {Object}
+ * @return {Object}
+ */
+const GrabberSelection = new Lang.Class({
+
+    Name: 'Ui.GrabberSelection',
+    Extends: Grabber,
+
+    /**
+     * Constructor
+     *
+     * @return {Void}
+     */
+    _init: function() {
+        this.parent();
+        this.actor.add_style_class_name('.gnome-screenshot-grabber-selection');
+
+        // temporary cancel on click
+        this.actor.connect('button-press-event', Lang.bind(this, function() {
+            this.cancel();
+        }));
     },
 
     /* --- */

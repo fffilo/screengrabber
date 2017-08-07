@@ -1,3 +1,4 @@
-.gnome-screenshot-overlay { background-color: transparent; }
+.gnome-screenshot-grabber { background-color: rgba(0,0,0,0.5); }
+.gnome-screenshot-grabber.gnome-screenshot-grabber-with-selection { background-color: transparent;  }
 .gnome-screenshot-background { background-color: rgba(0,0,0,0.5); }
 .gnome-screenshot-selection { background-color: transparent; outline: 2px solid rgba(255,0,0,0.5); }

@@ -800,10 +800,17 @@ const Grabber = new Lang.Class({
         this._windows = [];
         let windows = global.get_window_actors()
             .filter(function(actor) {
-                // to do: more filter?
-                return actor.visible;
+                // filter visible windows and normal/dialog windows
+                let meta = actor.get_meta_window();
+                let type = meta.get_window_type();
+                let valid = [ Meta.WindowType.NORMAL, Meta.WindowType.DIALOG, Meta.WindowType.MODAL_DIALOG ];
+
+                return true
+                    && actor.visible
+                    && valid.indexOf(type) !== -1;
             })
             .sort(function(a, b) {
+                // sort window list lowest layer first
                 return a.get_meta_window().get_layer() <= b.get_meta_window().get_layer();
             });
 

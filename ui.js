@@ -837,6 +837,8 @@ const Grabber = new Lang.Class({
      */
     _refresh_windows: function() {
         this._windows = [];
+
+        // fiter and sort window actors
         let windows = global.get_window_actors()
             .filter(function(actor) {
                 // filter visible windows and normal/dialog windows
@@ -853,17 +855,32 @@ const Grabber = new Lang.Class({
                 return a.get_meta_window().get_layer() <= b.get_meta_window().get_layer();
             });
 
+        // iterete windows and push to this._windows
         for (let i = 0; i < windows.length; i++) {
             let actor = windows[i];
-            let position = actor.get_position();
-            let size = actor.get_size();
+            let meta = actor.get_meta_window();
+            let frame = meta.get_frame_rect();
+            let rect = {
+                left: frame.x,
+                top: frame.y,
+                width: frame.width,
+                height: frame.height,
+            }
 
-            this._windows.push({
-                left: position[0],
-                top: position[1],
-                width: size[0],
-                height: size[1],
-            });
+            // to do: settings include window shadows
+            //if (settings.something) {
+            //    let position = actor.get_position();
+            //    let size = actor.get_size();
+            //
+            //    rect = {
+            //        left: position[0],
+            //        top: position[1],
+            //        width: size[0],
+            //        height: size[1],
+            //    }
+            //}
+
+            this._windows.push(rect);
         }
     },
 

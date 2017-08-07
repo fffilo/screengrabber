@@ -13,6 +13,7 @@ const Clutter = imports.gi.Clutter;
 const GLib = imports.gi.GLib;
 const Gio = imports.gi.Gio;
 const Meta = imports.gi.Meta;
+const Tweener = imports.ui.tweener;
 const MessageTray = imports.ui.messageTray;
 const PanelMenu = imports.ui.panelMenu;
 const PopupMenu = imports.ui.popupMenu;
@@ -208,6 +209,10 @@ const Indicator = new Lang.Class({
      * @return {Void}
      */
     _handle_screenshot_save: function(actor, result, area, filename) {
+        // to do: flash from settings
+        let flash = new Flash();
+        flash.fire();
+
         // to do: filename template from settings
         let now = new Date();
         let _Y = now.getFullYear();
@@ -583,11 +588,215 @@ const Container = new Lang.Class({
 Signals.addSignalMethods(Container.prototype);
 
 /**
+ * Extended Container constructor
+ *
+ * Container with desktop/monitor/windows
+ * private properties (and with fullscreen
+ * method)
+ *
+ * @param  {Object}
+ * @return {Object}
+ */
+const ContainerExtended = new Lang.Class({
+
+    Name: 'Ui.ContainerExtended',
+    Extends: Container,
+
+    /**
+     * Set actor size to fill desktop
+     *
+     * @return {Void}
+     */
+    fullscreen: function() {
+        this.actor.set_position(this._desktop.left, this._desktop.top);
+        this.actor.set_size(this._desktop.width, this._desktop.height);
+    },
+
+    /**
+     * Refresh desktop size
+     * (desktop position/size including
+     * all monitors)
+     *
+     * @return {Object}
+     */
+    _refresh_desktop: function() {
+        this._desktop = {
+            left: 0,
+            top: 0,
+            width: 0,
+            height: 0,
+        }
+
+        for (let i = 0; i < this._monitors.length; i++) {
+            let monitor = this._monitors[i];
+
+            this._desktop.left = Math.min(this._desktop.left, monitor.left);
+            this._desktop.top = Math.min(this._desktop.top, monitor.top);
+            this._desktop.width = Math.max(this._desktop.width, monitor.left + monitor.width);
+            this._desktop.height = Math.max(this._desktop.height, monitor.top + monitor.height);
+        }
+    },
+
+    /**
+     * Refresh monitor list
+     * (each monitor position/size)
+     *
+     * @return {Object}
+     */
+    _refresh_monitors: function() {
+        this._monitors = [];
+
+        for (let i = 0; i < Main.layoutManager.monitors.length; i++) {
+            this._monitors.push({
+                left: Main.layoutManager.monitors[i].x,
+                top: Main.layoutManager.monitors[i].y,
+                width: Main.layoutManager.monitors[i].width,
+                height: Main.layoutManager.monitors[i].height,
+            });
+        }
+    },
+
+    /**
+     * Refresh windows list
+     * (each window position/size)
+     *
+     * @return {Object}
+     */
+    _refresh_windows: function() {
+        this._windows = [];
+
+        // fiter and sort window actors
+        let windows = global.get_window_actors()
+            .filter(function(actor) {
+                // filter visible windows and normal/dialog windows
+                let meta = actor.get_meta_window();
+                let type = meta.get_window_type();
+                let valid = [ Meta.WindowType.NORMAL, Meta.WindowType.DIALOG, Meta.WindowType.MODAL_DIALOG ];
+
+                return true
+                    && actor.visible
+                    && valid.indexOf(type) !== -1;
+            })
+            .sort(function(a, b) {
+                // sort window list lowest layer first
+                return a.get_meta_window().get_layer() <= b.get_meta_window().get_layer();
+            });
+
+        // iterete windows and push to this._windows
+        for (let i = 0; i < windows.length; i++) {
+            let actor = windows[i];
+            let meta = actor.get_meta_window();
+            let frame = meta.get_frame_rect();
+
+            this._windows.push({
+                left: frame.x,
+                top: frame.y,
+                width: frame.width,
+                height: frame.height,
+            });
+        }
+    },
+
+});
+
+/**
+ * Flash constructor
+ *
+ * blank white fullscreen container
+ * that 'acts' like camera flash
+ *
+ * @param  {Object}
+ * @return {Object}
+ */
+const Flash = new Lang.Class({
+
+    Name: 'Ui.Grabber',
+    Extends: ContainerExtended,
+
+    /**
+     * Constructor
+     *
+     * @return {Void}
+     */
+    _init: function() {
+        this.parent();
+        this.actor.add_style_class_name('gnome-screenshot-flash');
+
+        this._sound = true;
+
+        this._refresh_windows();
+        this._refresh_monitors();
+        this._refresh_desktop();
+        this.fullscreen();
+
+        Main.uiGroup.add_actor(this.actor);
+    },
+
+    /**
+     * Destructor
+     *
+     * @return {Void}
+     */
+    destroy: function() {
+        Main.uiGroup.remove_actor(this.actor);
+        this.parent();
+    },
+
+    /**
+     * Sound property getter
+     *
+     * @return {Boolean}
+     */
+    get sound() {
+        return this._sound;
+    },
+
+    /**
+     * Sound property setter
+     *
+     * @param  {Boolean}
+     * @return {Void}
+     */
+    set sound(value) {
+        this._sound = !!value;
+    },
+
+    /**
+     * Simulate camera flash
+     *
+     * @param  {Function} callback (optional)
+     * @return {Void}
+     */
+    fire: function(callback) {
+        if (this.sound)
+            global.play_theme_sound(0, 'camera-shutter', 'Taking screenshot', null);
+
+        this.visible = true;
+        this.actor.opacity = 255;
+
+        Tweener.addTween(this.actor, {
+            opacity: 0,
+            time: 0.5,
+            transition: 'easeOutQuad',
+            onComplete: Lang.bind(this, function() {
+                if (typeof callback === 'function')
+                    callback.call(this);
+
+               this.destroy();
+            })
+        });
+    },
+
+    /* --- */
+
+});
+
+/**
  * Grabber constructor
  *
- * blank screen graber container
- * (container with overlay and
- * selection area)
+ * blank screen graber fullscreen
+ * container (container with overlay
+ * and selection area)
  *
  * @param  {Object}
  * @return {Object}
@@ -595,7 +804,7 @@ Signals.addSignalMethods(Container.prototype);
 const Grabber = new Lang.Class({
 
     Name: 'Ui.Grabber',
-    Extends: Container,
+    Extends: ContainerExtended,
 
     /**
      * Constructor
@@ -773,115 +982,6 @@ const Grabber = new Lang.Class({
      */
     cancel: function() {
         this.emit('cancel', {});
-    },
-
-    /**
-     * Set actor size to fill desktop
-     *
-     * @return {Void}
-     */
-    fullscreen: function() {
-        this.actor.set_position(this._desktop.left, this._desktop.top);
-        this.actor.set_size(this._desktop.width, this._desktop.height);
-    },
-
-    /**
-     * Refresh desktop size
-     * (desktop position/size including
-     * all monitors)
-     *
-     * @return {Object}
-     */
-    _refresh_desktop: function() {
-        this._desktop = {
-            left: 0,
-            top: 0,
-            width: 0,
-            height: 0,
-        }
-
-        for (let i = 0; i < this._monitors.length; i++) {
-            let monitor = this._monitors[i];
-
-            this._desktop.left = Math.min(this._desktop.left, monitor.left);
-            this._desktop.top = Math.min(this._desktop.top, monitor.top);
-            this._desktop.width = Math.max(this._desktop.width, monitor.left + monitor.width);
-            this._desktop.height = Math.max(this._desktop.height, monitor.top + monitor.height);
-        }
-    },
-
-    /**
-     * Refresh monitor list
-     * (each monitor position/size)
-     *
-     * @return {Object}
-     */
-    _refresh_monitors: function() {
-        this._monitors = [];
-
-        for (let i = 0; i < Main.layoutManager.monitors.length; i++) {
-            this._monitors.push({
-                left: Main.layoutManager.monitors[i].x,
-                top: Main.layoutManager.monitors[i].y,
-                width: Main.layoutManager.monitors[i].width,
-                height: Main.layoutManager.monitors[i].height,
-            });
-        }
-    },
-
-    /**
-     * Refresh windows list
-     * (each window position/size)
-     *
-     * @return {Object}
-     */
-    _refresh_windows: function() {
-        this._windows = [];
-
-        // fiter and sort window actors
-        let windows = global.get_window_actors()
-            .filter(function(actor) {
-                // filter visible windows and normal/dialog windows
-                let meta = actor.get_meta_window();
-                let type = meta.get_window_type();
-                let valid = [ Meta.WindowType.NORMAL, Meta.WindowType.DIALOG, Meta.WindowType.MODAL_DIALOG ];
-
-                return true
-                    && actor.visible
-                    && valid.indexOf(type) !== -1;
-            })
-            .sort(function(a, b) {
-                // sort window list lowest layer first
-                return a.get_meta_window().get_layer() <= b.get_meta_window().get_layer();
-            });
-
-        // iterete windows and push to this._windows
-        for (let i = 0; i < windows.length; i++) {
-            let actor = windows[i];
-            let meta = actor.get_meta_window();
-            let frame = meta.get_frame_rect();
-            let rect = {
-                left: frame.x,
-                top: frame.y,
-                width: frame.width,
-                height: frame.height,
-            }
-
-            // to do: settings include window shadows
-            //if (settings.something) {
-            //    let position = actor.get_position();
-            //    let size = actor.get_size();
-            //
-            //    rect = {
-            //        left: position[0],
-            //        top: position[1],
-            //        width: size[0],
-            //        height: size[1],
-            //    }
-            //}
-
-            this._windows.push(rect);
-        }
     },
 
     /* --- */

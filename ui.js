@@ -695,6 +695,7 @@ const Grabber = new Lang.Class({
     _init: function() {
         this.parent();
         this.actor.add_style_class_name('gnome-screenshot-grabber');
+        this.actor.connect('key-press-event', Lang.bind(this, this._handle_key_press_event));
 
         this.backgroundTop = new Container();
         this.backgroundTop.actor.add_style_class_name('gnome-screenshot-background');
@@ -859,6 +860,37 @@ const Grabber = new Lang.Class({
         this.emit('cancel', {});
     },
 
+    /**
+     * Container key-press-event event handler:
+     * this method will pass it's arguments
+     * to a _handle_key_press_event method
+     * with suffix of event key hex code.
+     * For example ESC keypess will execute
+     * this._handle_key_press_event_0x1b(),
+     * if method exists (27, or hexadecimal
+     * 0x1b, is ascii code of ESC)
+     *
+     * @param  {Object} actor
+     * @param  {Object} event
+     * @return {Void}
+     */
+    _handle_key_press_event: function(actor, event) {
+        let hex = 'unkonwn';
+        try {
+            let key = event.get_key_unicode();
+            let chr = key.charCodeAt(0);
+            hex = chr.toString(16);
+            hex = ('00' + hex).substr(-2);
+            hex = '0x' + hex;
+        }
+        catch(e) {
+            // pass
+        }
+
+        if (typeof this['_handle_key_press_event_' + hex] === 'function')
+            this['_handle_key_press_event_' + hex](actor, event);
+    },
+
     /* --- */
 
 });
@@ -975,6 +1007,18 @@ const GrabberHighlights = new Lang.Class({
     _handle_motion_event: function(actor, event) {
         let [ x, y ] = event.get_coords();
         this._select_highlight(x, y);
+    },
+
+    /**
+     * Container key-press-event event handler
+     * for key escape
+     *
+     * @param  {Object} actor
+     * @param  {Object} event
+     * @return {Void}
+     */
+    _handle_key_press_event_0x1b: function(actor, event) {
+        this.cancel();
     },
 
     /* --- */
@@ -1119,10 +1163,45 @@ const GrabberSelection = new Lang.Class({
         this.parent();
         this.actor.add_style_class_name('.gnome-screenshot-grabber-selection');
 
-        // temporary cancel on click
-        this.actor.connect('button-press-event', Lang.bind(this, function() {
+        this.actor.connect('button-press-event', Lang.bind(this, this._handle_button_press_event));
+        this.actor.connect('motion-event', Lang.bind(this, this._handle_motion_event));
+    },
+
+    /**
+     * Container button-press-event event handler
+     *
+     * @param  {Object} actor
+     * @param  {Object} event
+     * @return {Void}
+     */
+    _handle_button_press_event: function(actor, event) {
+        // to do
+    },
+
+    /**
+     * Container motion-event event handler
+     *
+     * @param  {Object} actor
+     * @param  {Object} event
+     * @return {Void}
+     */
+    _handle_motion_event: function(actor, event) {
+        // to do
+    },
+
+    /**
+     * Container key-press-event event handler
+     * for key escape
+     *
+     * @param  {Object} actor
+     * @param  {Object} event
+     * @return {Void}
+     */
+    _handle_key_press_event_0x1b: function(actor, event) {
+        if (this.get_selection())
+            this.clear_selection();
+        else
             this.cancel();
-        }));
     },
 
     /* --- */

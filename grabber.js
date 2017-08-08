@@ -72,7 +72,7 @@ const Base = new Lang.Class({
      * @return {Void}
      */
     destroy: function() {
-        Main.popModal(this.actor);
+        this._modal(false);
         global.screen.set_cursor(Meta.Cursor.DEFAULT);
         Main.uiGroup.remove_actor(this.actor);
         this.parent();
@@ -88,7 +88,7 @@ const Base = new Lang.Class({
     set visible(value) {
         this.actor.visible = value;
         global.screen.set_cursor(value ? Meta.Cursor.CROSSHAIR : Meta.Cursor.DEFAULT);
-        Main[value ? 'pushModal' : 'popModal'](this.actor);
+        this._modal(value);
     },
 
     /**
@@ -198,6 +198,22 @@ const Base = new Lang.Class({
      */
     cancel: function() {
         this.emit('cancel', {});
+    },
+
+    /**
+     * Main push/pop modal
+     *
+     * @param  {Boolean} add
+     * @return {Void}
+     */
+    _modal: function(add) {
+        let method = add ? 'pushModal' : 'popModal';
+        if (typeof Main[method] !== 'function')
+            return;
+        if (!this.visible && !add)
+            return;
+
+        Main[method](this.actor);
     },
 
     /**

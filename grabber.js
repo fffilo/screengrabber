@@ -103,10 +103,10 @@ const Base = new Lang.Class({
             return false;
 
         return {
-            left: this.selection.left,
-            top: this.selection.top,
-            width: this.selection.width,
-            height: this.selection.height,
+            left: Math.round(this.selection.left),
+            top: Math.round(this.selection.top),
+            width: Math.round(this.selection.width),
+            height: Math.round(this.selection.height),
         }
     },
 
@@ -188,17 +188,8 @@ const Base = new Lang.Class({
      */
     screenshot: function() {
         let area = this.get_selection();
-        if (!area)
+        if (!area || area.width <= 0 || area.height <= 0)
             return;
-
-        if (area.width === 0 || area.height === 0)
-            return;
-        if (area.width < 8)
-            area.width = 8;
-        if (area.height < 8)
-            area.height = 8;
-
-        // to do: if area.width or area.height is less than 8 resize image
 
         let filename = File.temp();
         let screenshot = new Shell.Screenshot();
@@ -281,18 +272,11 @@ const Base = new Lang.Class({
      * @return {Void}
      */
     _handle_screenshot: function(actor, result, area, filename) {
-        let event = {
+        this.emit('screenshot', {
             result: result,
             filename: filename,
-            area: {
-                left: area.x,
-                top: area.y,
-                width: area.width,
-                height: area.height,
-            },
-        }
-
-        this.emit('screenshot', event);
+            area: area,
+        });
     },
 
     /**

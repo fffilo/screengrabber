@@ -1,15 +1,15 @@
 {
     "description": "Create, copy, store and upload screenshots",
     "description-html": "Create, copy, store and upload screenshots",
-    "gettext-domain": "gnome-screenshot",
+    "gettext-domain": "screengrabber",
     "license": "GNU General Public License v3.0",
     "license-html": "This program comes with ABSOLUTELY NO WARRANTY.\nSee the <a href=\"https:\/\/www.gnu.org\/licenses\/gpl-3.0.html\">GNU General Public License v3.0</a> for details.",
-    "name": "GNOME Screenshot",
+    "name": "ScreenGrabber",
     "original-author": "Franjo Filo <fffilo666@gmail.com>",
     "original-author-html": "Franjo Filo &lt;<a href=\"mailto:fffilo666@gmail.com\">fffilo666@gmail.com&gt;</a>",
-    "settings-schema": "org.gnome.shell.extensions.gnome-screenshot",
+    "settings-schema": "org.gnome.shell.extensions.screengrabber",
     "shell-version": ["3.18.5"],
-    "url": "https://github.com/fffilo/gnome-screenshot",
-    "uuid": "gnome-screenshot@gnome-shell-exstensions.fffilo.github.com",
+    "url": "https://github.com/fffilo/screengrabber",
+    "uuid": "screengrabber@gnome-shell-exstensions.fffilo.github.com",
     "version": "1"
 }

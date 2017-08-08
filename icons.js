@@ -8,7 +8,7 @@ const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
 
 // Icons
-//const DEFAULT = 'gnome-screenshot-symbolic';
+//const DEFAULT = 'screengrabber-symbolic';
 const DEFAULT = 'camera-photo-symbolic';
 
 /**

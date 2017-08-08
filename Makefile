@@ -1,5 +1,5 @@
 INSTALL_PATH = ~/.local/share/gnome-shell/extensions
-INSTALL_NAME = gnome-screenshot@gnome-shell-exstensions.fffilo.github.com
+INSTALL_NAME = screengrabber@gnome-shell-exstensions.fffilo.github.com
 BUILD_DIR = _build
 FILES = assets/ container.js convenience.js COPYING extension.js grabber.js icons.js indicator.js metadata.json notification.js README.md schemas/ settings.js stylesheet.css translation.js
 

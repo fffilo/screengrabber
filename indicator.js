@@ -24,7 +24,7 @@ const _ = Translation.translate;
 /**
  * Indicator Base constructor
  *
- * GNOME Screenshot indicator
+ * ScreenGrabber indicator
  * extends PanelMenu.Button
  *
  * @param  {Object}
@@ -71,7 +71,7 @@ const Base = new Lang.Class({
      */
     _ui: function() {
         this.actor.add_style_class_name('panel-status-button');
-        this.actor.add_style_class_name('gnome-screenshot');
+        this.actor.add_style_class_name('screengrabber');
 
         this.icon = new St.Icon({
             icon_name: Icons.DEFAULT,
@@ -113,7 +113,7 @@ const Base = new Lang.Class({
         this._grabber = new Grabber.Base();
         this._grabber.connect('screenshot', Lang.bind(this, this._handle_grabber_screenshot));
         this._grabber.connect('cancel', Lang.bind(this, this._handle_grabber_cancel));
-        this._grabber.actor.add_style_class_name('.gnome-screenshot-grabber-desktop');
+        this._grabber.actor.add_style_class_name('.screengrabber-grabber-desktop');
         this._grabber.select_all();
         //this._grabber.visible = true;
         this._grabber.screenshot();
@@ -224,7 +224,7 @@ const Base = new Lang.Class({
     flash: function(area, mute) {
         if (area) {
             let flash = new Container.Base();
-            flash.actor.add_style_class_name('gnome-screenshot-flash');
+            flash.actor.add_style_class_name('screengrabber-flash');
             flash.set_position(area.left, area.top)
             flash.set_size(area.width, area.height)
             Main.uiGroup.add_actor(flash.actor);
@@ -238,6 +238,7 @@ const Base = new Lang.Class({
 
         if (!mute)
             global.play_theme_sound(0, 'camera-shutter', 'Taking screenshot', null);
+        global.log("YYY",area,mute);
     },
 
     /* --- */

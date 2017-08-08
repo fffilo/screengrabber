@@ -31,7 +31,7 @@ const Base = new Lang.Class({
      */
     _init: function() {
         this.actor = new Shell.GenericContainer({
-            style_class: 'gnome-screenshot-container',
+            style_class: 'screengrabber-container',
             visible: false,
             reactive: true,
         });

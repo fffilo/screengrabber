@@ -1,2 +1,2 @@
-GNOME Screenshot
-================
+ScreenGrabber
+=============

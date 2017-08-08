@@ -35,31 +35,31 @@ const Base = new Lang.Class({
      */
     _init: function() {
         this.parent();
-        this.actor.add_style_class_name('gnome-screenshot-grabber');
+        this.actor.add_style_class_name('screengrabber-grabber');
         this.actor.connect('key-press-event', Lang.bind(this, this._handle_key_press_event));
 
         this.backgroundTop = new Container.Base();
-        this.backgroundTop.actor.add_style_class_name('gnome-screenshot-background');
+        this.backgroundTop.actor.add_style_class_name('screengrabber-background');
         this.backgroundTop.actor.reactive = false;
         this.add(this.backgroundTop.actor);
 
         this.backgroundRight = new Container.Base();
-        this.backgroundRight.actor.add_style_class_name('gnome-screenshot-background');
+        this.backgroundRight.actor.add_style_class_name('screengrabber-background');
         this.backgroundRight.actor.reactive = false;
         this.add(this.backgroundRight.actor);
 
         this.backgroundBottom = new Container.Base();
-        this.backgroundBottom.actor.add_style_class_name('gnome-screenshot-background');
+        this.backgroundBottom.actor.add_style_class_name('screengrabber-background');
         this.backgroundBottom.actor.reactive = false;
         this.add(this.backgroundBottom.actor);
 
         this.backgroundLeft = new Container.Base();
-        this.backgroundLeft.actor.add_style_class_name('gnome-screenshot-background');
+        this.backgroundLeft.actor.add_style_class_name('screengrabber-background');
         this.backgroundLeft.actor.reactive = false;
         this.add(this.backgroundLeft.actor);
 
         this.selection = new Container.Base();
-        this.selection.actor.add_style_class_name('gnome-screenshot-selection');
+        this.selection.actor.add_style_class_name('screengrabber-selection');
         this.selection.actor.reactive = false;
         this.add(this.selection.actor);
 
@@ -153,7 +153,7 @@ const Base = new Lang.Class({
         this.backgroundRight.visible = true;
         this.backgroundTop.visible = true;
 
-        this.actor.add_style_class_name('gnome-screenshot-grabber-with-selection');
+        this.actor.add_style_class_name('screengrabber-grabber-with-selection');
     },
 
     /**
@@ -178,7 +178,7 @@ const Base = new Lang.Class({
         this.backgroundRight.visible = false;
         this.backgroundTop.visible = false;
 
-        this.actor.remove_style_class_name('gnome-screenshot-grabber-with-selection');
+        this.actor.remove_style_class_name('screengrabber-grabber-with-selection');
     },
 
     /**
@@ -275,7 +275,12 @@ const Base = new Lang.Class({
         this.emit('screenshot', {
             result: result,
             filename: filename,
-            area: area,
+            area: {
+                left: area.x,
+                top: area.y,
+                width: area.width,
+                height: area.height,
+            },
         });
     },
 
@@ -464,7 +469,7 @@ const Monitor = new Lang.Class({
      */
     _init: function() {
         this.parent();
-        this.actor.add_style_class_name('.gnome-screenshot-grabber-monitor');
+        this.actor.add_style_class_name('screengrabber-grabber-monitor');
     },
 
     /**
@@ -510,7 +515,7 @@ const Window = new Lang.Class({
      */
     _init: function() {
         this.parent();
-        this.actor.add_style_class_name('.gnome-screenshot-grabber-window');
+        this.actor.add_style_class_name('screengrabber-grabber-window');
     },
 
     /**
@@ -579,7 +584,7 @@ const Selection = new Lang.Class({
      */
     _init: function() {
         this.parent();
-        this.actor.add_style_class_name('.gnome-screenshot-grabber-selection');
+        this.actor.add_style_class_name('screengrabber-grabber-selection');
 
         this.actor.connect('button-press-event', Lang.bind(this, this._handle_button_press_event));
         this.actor.connect('button-release-event', Lang.bind(this, this._handle_button_release_event));

@@ -6,12 +6,12 @@
 // import modules
 const Lang = imports.lang;
 const Shell = imports.gi.Shell;
-const GLib = imports.gi.GLib;
 const Main = imports.ui.main;
 const Clutter = imports.gi.Clutter;
 const Meta = imports.gi.Meta;
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
+const File = Me.imports.file;
 const Container = Me.imports.container;
 
 /**
@@ -190,7 +190,7 @@ const Base = new Lang.Class({
         if (!area)
             return;
 
-        let [ handle, filename ] = GLib.file_open_tmp(null);
+        let filename = File.temp();
         let screenshot = new Shell.Screenshot();
         screenshot.screenshot_area(area.left, area.top, area.width, area.height, filename, Lang.bind(this, this._handle_screenshot));
     },

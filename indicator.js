@@ -6,13 +6,13 @@
 // import modules
 const Lang = imports.lang;
 const Main = imports.ui.main;
+const Gdk = imports.gi.Gdk;
 const St = imports.gi.St;
-const GLib = imports.gi.GLib;
-const Gio = imports.gi.Gio;
 const PanelMenu = imports.ui.panelMenu;
 const PopupMenu = imports.ui.popupMenu;
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
+const File = Me.imports.file;
 const Notification = Me.imports.notification;
 const Container = Me.imports.container;
 const Grabber = Me.imports.grabber;
@@ -55,6 +55,9 @@ const Base = new Lang.Class({
      * @return {Void}
      */
     _def: function() {
+        //this.screen = new Gdk.Display();
+        //global.log("YYY", this.screen, typeof this.screen.connect, typeof this.screen.disconnect, typeof this.screen.destroy);
+
         this.notification = new Notification.Base();
 
         // to do:
@@ -188,21 +191,9 @@ const Base = new Lang.Class({
         this.flash(area, mute);
 
         // to do: filename template from settings
-        let now = new Date();
-        let _Y = now.getFullYear();
-        let _m = ('0' + (now.getMonth() + 1)).substr(-2);
-        let _d = ('0' + now.getDate()).substr(-2);
-        let _H = ('0' + now.getHours()).substr(-2);
-        let _M = ('0' + now.getMinutes()).substr(-2);
-        let _S = ('0' + now.getSeconds()).substr(-2);
-
-        // move temp file to ~/Pictures
         let src = event.filename;
-        let dst = 'Screenshot from %s-%s-%s %s-%s-%s'.format(_Y, _m, _d, _H, _M, _S);
-        dst = GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_PICTURES) + '/' + dst;
-        Gio.file_new_for_path(src).move(Gio.file_new_for_path(dst), Gio.FileCopyFlags.OVERWRITE, null, null);
-
-        // to do: upload file
+        let dst = File.user_special_dir('pictures') + '/' + File.screenshot(event.area, File.DefaultTemplate);
+        File.move(src, dst);
 
         // show notification
         // to do: link destination

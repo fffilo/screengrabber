@@ -1,7 +1,7 @@
 INSTALL_PATH = ~/.local/share/gnome-shell/extensions
 INSTALL_NAME = gnome-screenshot@gnome-shell-exstensions.fffilo.github.com
 BUILD_DIR = _build
-FILES = assets/ convenience.js COPYING extension.js icons.js metadata.json README.md schemas/ settings.js stylesheet.css translation.js ui.js
+FILES = assets/ container.js convenience.js COPYING extension.js grabber.js icons.js indicator.js metadata.json notification.js README.md schemas/ settings.js stylesheet.css translation.js
 
 install: build
 	rm -rf $(INSTALL_PATH)/$(INSTALL_NAME)

@@ -7,7 +7,6 @@
 const Lang = imports.lang;
 const Main = imports.ui.main;
 const St = imports.gi.St;
-const Shell = imports.gi.Shell;
 const GLib = imports.gi.GLib;
 const Gio = imports.gi.Gio;
 const PanelMenu = imports.ui.panelMenu;
@@ -179,35 +178,8 @@ const Base = new Lang.Class({
      * @return {Void}
      */
     _handle_grabber_screenshot: function(actor, event) {
-        let [ handle, filename ] = GLib.file_open_tmp(null);
-        let screenshot = new Shell.Screenshot();
-        screenshot.screenshot_area(event.left, event.top, event.width, event.height, filename, Lang.bind(this, this._handle_screenshot_save));
-    },
-
-    /**
-     * Grabber cancel event handler
-     *
-     * @param  {Object} actor
-     * @param  {Object} event
-     * @return {Void}
-     */
-    _handle_grabber_cancel: function(actor, event) {
-        actor.destroy();
-        this._grabber = null;
-    },
-
-    /**
-     * Screenshot callback event handler
-     *
-     * @param  {Object}  actor
-     * @param  {Boolean} result
-     * @param  {Object}  area
-     * @param  {String}  filename
-     * @return {Void}
-     */
-    _handle_screenshot_save: function(actor, result, area, filename) {
         // to do: flash enabled in settings?
-        this.flash(area);
+        this.flash(event.area.left, event.area.top, event.area.width, event.area.heigth);
 
         // to do: filename template from settings
         let now = new Date();
@@ -219,7 +191,7 @@ const Base = new Lang.Class({
         let _S = ('0' + now.getSeconds()).substr(-2);
 
         // move temp file to ~/Pictures
-        let src = filename;
+        let src = event.filename;
         let dst = 'Screenshot from %s-%s-%s %s-%s-%s'.format(_Y, _m, _d, _H, _M, _S);
         dst = GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_PICTURES) + '/' + dst;
         Gio.file_new_for_path(src).move(Gio.file_new_for_path(dst), Gio.FileCopyFlags.OVERWRITE, null, null);
@@ -235,16 +207,31 @@ const Base = new Lang.Class({
     },
 
     /**
-     * Simulate camera flash
+     * Grabber cancel event handler
      *
-     * @param  {Object} area
+     * @param  {Object} actor
+     * @param  {Object} event
      * @return {Void}
      */
-    flash: function(area) {
+    _handle_grabber_cancel: function(actor, event) {
+        actor.destroy();
+        this._grabber = null;
+    },
+
+    /**
+     * Simulate camera flash
+     *
+     * @param  {Number} left
+     * @param  {Number} top
+     * @param  {Number} width
+     * @param  {Number} height
+     * @return {Void}
+     */
+    flash: function(left, top, width, height) {
         let flash = new Container.Base();
         flash.actor.add_style_class_name('gnome-screenshot-flash');
-        flash.set_position(area.x, area.y)
-        flash.set_size(area.width, area.height)
+        flash.set_position(left, top)
+        flash.set_size(width, height)
         Main.uiGroup.add_actor(flash.actor);
         //flash.maximize();
 

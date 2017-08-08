@@ -5,6 +5,8 @@
 
 // import modules
 const Lang = imports.lang;
+const Shell = imports.gi.Shell;
+const GLib = imports.gi.GLib;
 const Main = imports.ui.main;
 const Clutter = imports.gi.Clutter;
 const Meta = imports.gi.Meta;
@@ -179,16 +181,18 @@ const Base = new Lang.Class({
     },
 
     /**
-     * Emit screenshot signal
+     * Grab screenshot
      *
      * @return {Void}
      */
     screenshot: function() {
-        let event = this.get_selection();
-        if (!event)
+        let area = this.get_selection();
+        if (!area)
             return;
 
-        this.emit('screenshot', event);
+        let [ handle, filename ] = GLib.file_open_tmp(null);
+        let screenshot = new Shell.Screenshot();
+        screenshot.screenshot_area(area.left, area.top, area.width, area.height, filename, Lang.bind(this, this._handle_screenshot));
     },
 
     /**
@@ -214,6 +218,30 @@ const Base = new Lang.Class({
             return;
 
         Main[method](this.actor);
+    },
+
+    /**
+     * Screenshot callback event handler
+     *
+     * @param  {Object}  actor
+     * @param  {Boolean} result
+     * @param  {Object}  area
+     * @param  {String}  filename
+     * @return {Void}
+     */
+    _handle_screenshot: function(actor, result, area, filename) {
+        let event = {
+            result: result,
+            filename: filename,
+            area: {
+                left: area.x,
+                top: area.y,
+                width: area.width,
+                height: area.height,
+            },
+        }
+
+        this.emit('screenshot', event);
     },
 
     /**
@@ -327,12 +355,12 @@ const Highlights = new Lang.Class({
     _handle_button_press_event: function(actor, event) {
         let type = event.type();
         let button = event.get_button();
-        let selection = this.get_selection();
+        let area = this.get_selection();
 
         if (event.type() == Clutter.EventType.BUTTON_PRESS && button == 3) {
             this.cancel();
         }
-        else if (event.type() == Clutter.EventType.BUTTON_PRESS && button == 1 && selection) {
+        else if (event.type() == Clutter.EventType.BUTTON_PRESS && button == 1 && area) {
             this.screenshot();
         }
     },

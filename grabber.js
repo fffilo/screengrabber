@@ -7,7 +7,6 @@
 const Lang = imports.lang;
 const Shell = imports.gi.Shell;
 const Main = imports.ui.main;
-const Clutter = imports.gi.Clutter;
 const Meta = imports.gi.Meta;
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
@@ -121,30 +120,32 @@ const Base = new Lang.Class({
      * @return {Void}
      */
     set_selection: function(left, top, width, height) {
+        let rect = this._rect(left, top, width, height);
+
         this.backgroundTop.left = 0;
         this.backgroundTop.top = 0;
         this.backgroundTop.width = this.width;
-        this.backgroundTop.height = top;
+        this.backgroundTop.height = rect.top;
 
-        this.backgroundRight.left = left + width;
-        this.backgroundRight.top = top;
+        this.backgroundRight.left = rect.left + rect.width;
+        this.backgroundRight.top = rect.top;
         this.backgroundRight.width = this.width - this.backgroundRight.left;
-        this.backgroundRight.height = height;
+        this.backgroundRight.height = rect.height;
 
         this.backgroundBottom.left = 0;
-        this.backgroundBottom.top = top + height;
+        this.backgroundBottom.top = rect.top + rect.height;
         this.backgroundBottom.width = this.width;
         this.backgroundBottom.height = this.height - this.backgroundBottom.top;
 
         this.backgroundLeft.left = 0;
-        this.backgroundLeft.top = top;
-        this.backgroundLeft.width = left;
-        this.backgroundLeft.height = height;
+        this.backgroundLeft.top = rect.top;
+        this.backgroundLeft.width = rect.left;
+        this.backgroundLeft.height = rect.height;
 
-        this.selection.left = left;
-        this.selection.top = top;
-        this.selection.width = width;
-        this.selection.height = height;
+        this.selection.left = rect.left;
+        this.selection.top = rect.top;
+        this.selection.width = rect.width;
+        this.selection.height = rect.height;
 
         this.selection.visible = true;
         this.backgroundLeft.visible = true;
@@ -190,6 +191,15 @@ const Base = new Lang.Class({
         if (!area)
             return;
 
+        if (area.width === 0 || area.height === 0)
+            return;
+        if (area.width < 8)
+            area.width = 8;
+        if (area.height < 8)
+            area.height = 8;
+
+        // to do: if area.width or area.height is less than 8 resize image
+
         let filename = File.temp();
         let screenshot = new Shell.Screenshot();
         screenshot.screenshot_area(area.left, area.top, area.width, area.height, filename, Lang.bind(this, this._handle_screenshot));
@@ -218,6 +228,47 @@ const Base = new Lang.Class({
             return;
 
         Main[method](this.actor);
+    },
+
+    /**
+     * Fix rect
+     *
+     * @param  {Number} left
+     * @param  {Number} top
+     * @param  {Number} width
+     * @param  {Number} height
+     * @return {Object}
+     */
+    _rect: function(left, top, width, height) {
+        let result = {
+            left: left,
+            top: top,
+            width: width,
+            height: height,
+        }
+
+        if (result.width < 0) {
+            result.left += width;
+            result.width *= -1;
+        }
+        if (result.height < 0) {
+            result.top += height;
+            result.height *= -1;
+        }
+        if (result.left < 0) {
+            result.width += result.left;
+            result.left = 0;
+        }
+        if (result.top < 0) {
+            result.height += result.top;
+            result.top = 0;
+        }
+        if (result.width + result.left > this.width)
+            result.width = this.width - result.left;
+        if (result.height + result.top > this.height)
+            result.height = this.height - result.top;
+
+        return result;
     },
 
     /**
@@ -353,14 +404,13 @@ const Highlights = new Lang.Class({
      * @return {Void}
      */
     _handle_button_press_event: function(actor, event) {
-        let type = event.type();
         let button = event.get_button();
         let area = this.get_selection();
 
-        if (event.type() == Clutter.EventType.BUTTON_PRESS && button == 3) {
+        if (button == 3) {
             this.cancel();
         }
-        else if (event.type() == Clutter.EventType.BUTTON_PRESS && button == 1 && area) {
+        else if (button == 1 && area) {
             this.screenshot();
         }
     },
@@ -548,7 +598,10 @@ const Selection = new Lang.Class({
         this.actor.add_style_class_name('.gnome-screenshot-grabber-selection');
 
         this.actor.connect('button-press-event', Lang.bind(this, this._handle_button_press_event));
+        this.actor.connect('button-release-event', Lang.bind(this, this._handle_button_release_event));
         this.actor.connect('motion-event', Lang.bind(this, this._handle_motion_event));
+
+        this._button_press_event_start = null;
     },
 
     /**
@@ -559,7 +612,32 @@ const Selection = new Lang.Class({
      * @return {Void}
      */
     _handle_button_press_event: function(actor, event) {
-        // to do
+        let button = event.get_button();
+
+        if (button == 3) {
+            this.cancel();
+        }
+        else if (button == 1) {
+            this._button_press_event_start = event.get_coords();
+        }
+    },
+
+    /**
+     * Container button-release-event event handler
+     *
+     * @param  {Object} actor
+     * @param  {Object} event
+     * @return {Void}
+     */
+    _handle_button_release_event: function(actor, event) {
+        if (!this._button_press_event_start)
+            return
+
+        this._handle_motion_event(actor, event);
+        this._button_press_event_start = null;
+
+        // to do: check if selection is too small
+        this.screenshot();
     },
 
     /**
@@ -570,7 +648,12 @@ const Selection = new Lang.Class({
      * @return {Void}
      */
     _handle_motion_event: function(actor, event) {
-        // to do
+        if (!this._button_press_event_start)
+            return
+
+        let start = this._button_press_event_start;
+        let drag = event.get_coords();
+        this.set_selection(start[0], start[1], drag[0] - start[0], drag[1] - start[1]);
     },
 
     /**

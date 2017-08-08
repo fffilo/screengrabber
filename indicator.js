@@ -158,7 +158,6 @@ const Base = new Lang.Class({
         this._grabber = new Grabber.Selection();
         this._grabber.connect('screenshot', Lang.bind(this, this._handle_grabber_screenshot));
         this._grabber.connect('cancel', Lang.bind(this, this._handle_grabber_cancel));
-        this._grabber.set_selection(10,20,30,40);
         this._grabber.visible = true;
     },
 

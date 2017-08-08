@@ -178,8 +178,14 @@ const Base = new Lang.Class({
      * @return {Void}
      */
     _handle_grabber_screenshot: function(actor, event) {
-        // to do: flash enabled in settings?
-        this.flash(event.area.left, event.area.top, event.area.width, event.area.heigth);
+        // to do: flash settings
+        let area = event.area,
+            mute = false;
+        //if (!this.settings.get_boolean('show-flash'))
+        //    area = false;
+        //if (this.settings.get_boolean('mute-flash'))
+        //    mute = true;
+        this.flash(area, mute);
 
         // to do: filename template from settings
         let now = new Date();
@@ -221,26 +227,27 @@ const Base = new Lang.Class({
     /**
      * Simulate camera flash
      *
-     * @param  {Number} left
-     * @param  {Number} top
-     * @param  {Number} width
-     * @param  {Number} height
+     * @param  {Object}  area
+     * @param  {Boolean} mute
      * @return {Void}
      */
-    flash: function(left, top, width, height) {
-        let flash = new Container.Base();
-        flash.actor.add_style_class_name('gnome-screenshot-flash');
-        flash.set_position(left, top)
-        flash.set_size(width, height)
-        Main.uiGroup.add_actor(flash.actor);
-        //flash.maximize();
+    flash: function(area, mute) {
+        if (area) {
+            let flash = new Container.Base();
+            flash.actor.add_style_class_name('gnome-screenshot-flash');
+            flash.set_position(area.left, area.top)
+            flash.set_size(area.width, area.height)
+            Main.uiGroup.add_actor(flash.actor);
+            //flash.maximize();
 
-        flash.fade_out(0.5, function(actor) {
-            Main.uiGroup.remove_actor(flash.actor);
-            actor.destroy();
-        });
+            flash.fade_out(0.5, function(actor) {
+                Main.uiGroup.remove_actor(flash.actor);
+                actor.destroy();
+            });
+        }
 
-        global.play_theme_sound(0, 'camera-shutter', 'Taking screenshot', null);
+        if (!mute)
+            global.play_theme_sound(0, 'camera-shutter', 'Taking screenshot', null);
     },
 
     /* --- */

@@ -250,8 +250,8 @@ const Base = new Lang.Class({
         if (area) {
             let flash = new Container.Base();
             flash.actor.add_style_class_name('screengrabber-flash');
-            flash.set_position(area.left, area.top)
-            flash.set_size(area.width, area.height)
+            flash.set_position(area.left, area.top);
+            flash.set_size(area.width, area.height);
             Main.uiGroup.add_actor(flash.actor);
             //flash.maximize();
 

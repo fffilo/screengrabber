@@ -1,5 +1,5 @@
-.screengrabber-flash { background-color: #fff; }
 .screengrabber-grabber { background-color: rgba(0,0,0,0.5); }
 .screengrabber-grabber.screengrabber-grabber-with-selection { background-color: transparent;  }
 .screengrabber-background { background-color: rgba(0,0,0,0.5); }
 .screengrabber-selection { background-color: transparent; outline: 2px solid rgba(255,0,0,0.5); }
+.screengrabber-flash { background-color: #fff; }

@@ -6,13 +6,13 @@
 // import modules
 const Lang = imports.lang;
 const Main = imports.ui.main;
-const Gdk = imports.gi.Gdk;
 const St = imports.gi.St;
 const PanelMenu = imports.ui.panelMenu;
 const PopupMenu = imports.ui.popupMenu;
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
 const File = Me.imports.file;
+const Screen = Me.imports.screen;
 const Notification = Me.imports.notification;
 const Container = Me.imports.container;
 const Grabber = Me.imports.grabber;
@@ -50,13 +50,27 @@ const Base = new Lang.Class({
     },
 
     /**
+     * Destructor
+     *
+     * @return {Void}
+     */
+    destroy: function() {
+        this.screen.destroy();
+        //this.settings.run_dispose();
+
+        this.parent();
+    },
+
+    /**
      * Initialize object properties
      *
      * @return {Void}
      */
     _def: function() {
-        //this.screen = new Gdk.Display();
-        //global.log("YYY", this.screen, typeof this.screen.connect, typeof this.screen.disconnect, typeof this.screen.destroy);
+        this.screen = new Screen.Screen();
+        this.screen.connect('composited-changed', Lang.bind(this, this._handle_screen));
+        this.screen.connect('monitors-changed', Lang.bind(this, this._handle_screen));
+        this.screen.connect('size-changed', Lang.bind(this, this._handle_screen));
 
         this.notification = new Notification.Base();
 
@@ -173,6 +187,17 @@ const Base = new Lang.Class({
     },
 
     /**
+     * Screen change signal event handler
+     *
+     * @param  {Object} actor
+     * @return {Void}
+     */
+    _handle_screen: function(actor) {
+        if (this._grabber)
+            this._grabber.cancel();
+    },
+
+    /**
      * Grabber screenshot event handler
      *
      * @param  {Object} actor
@@ -238,7 +263,6 @@ const Base = new Lang.Class({
 
         if (!mute)
             global.play_theme_sound(0, 'camera-shutter', 'Taking screenshot', null);
-        global.log("YYY",area,mute);
     },
 
     /* --- */

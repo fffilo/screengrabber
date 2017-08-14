@@ -1,2 +1,5 @@
 .2do
-screengrabber@gnome-shell-exstensions.fffilo.github.com.zip
+prod
+archive.zip
+*.sublime-project
+*.sublime-workspace

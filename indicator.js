@@ -46,6 +46,8 @@ const Base = new Lang.Class({
         this._def();
         this._ui();
 
+        this._handle_screen(this.screen);
+
         Main.panel.addToStatusArea(Me.metadata.uuid, this);
     },
 
@@ -195,6 +197,8 @@ const Base = new Lang.Class({
     _handle_screen: function(actor) {
         if (this._grabber)
             this._grabber.cancel();
+
+        this.menuMonitor.setSensitive(actor.monitors.length > 1);
     },
 
     /**

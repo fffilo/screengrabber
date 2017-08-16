@@ -77,13 +77,15 @@ const Screen = new Lang.Class({
         for (let i = 0; i < this.actor.get_n_monitors(); i++) {
             let rect = this.actor.get_monitor_geometry(i);
 
-            this.result.push({
+            result.push({
                 left: rect.x,
                 top: rect.y,
                 width: rect.width,
                 height: rect.height,
             })
         }
+
+        return result;
     },
 
     /**

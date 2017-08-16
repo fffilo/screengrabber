@@ -357,6 +357,7 @@ const Highlights = new Lang.Class({
      * @return {Void}
      */
     _refresh_highlights: function() {
+        this._highlight_index = null;
         this._highlights = [];
     },
 
@@ -377,10 +378,13 @@ const Highlights = new Lang.Class({
                 && y >= rect.top
                 && y <= rect.top + rect.height;
 
-            if (hover)
+            if (hover) {
+                this._highlight_index = i;
                 return this.set_selection(rect.left, rect.top, rect.width, rect.height);
+            }
         }
 
+        this._highlight_index = null;
         return this.clear_selection();
     },
 
@@ -481,12 +485,14 @@ const Monitor = new Lang.Class({
         this.parent();
 
         for (let i = 0; i < Main.layoutManager.monitors.length; i++) {
-            this._highlights.push({
-                left: Main.layoutManager.monitors[i].x,
-                top: Main.layoutManager.monitors[i].y,
-                width: Main.layoutManager.monitors[i].width,
-                height: Main.layoutManager.monitors[i].height,
-            });
+            let actor = Main.layoutManager.monitors[i];
+            let highlight = {
+                _actor: actor,
+            };
+
+            [ highlight.left, highlight.top, highlight.width, highlight.height ] = [ actor.x, actor.y, actor.width, actor.height ];
+
+            this._highlights.push(highlight);
         }
     },
 
@@ -548,26 +554,41 @@ const Window = new Lang.Class({
         // iterete windows and push to this._highlights
         for (let i = 0; i < windows.length; i++) {
             let actor = windows[i];
-            let rect = {};
+            let highlight = {
+                _actor: actor,
+            };
 
             if (this.shadows) {
                 // get window size/position including window outer shadow
-                [ rect.left, rect.top ] = actor.get_position();
-                [ rect.width, rect.height] = actor.get_size();
+                [ highlight.left, highlight.top ] = actor.get_position();
+                [ highlight.width, highlight.height] = actor.get_size();
             }
             else {
                 // get window frame rectangle
                 let frame = actor.get_meta_window().get_frame_rect();
-                rect = {
-                    left: frame.x,
-                    top: frame.y,
-                    width: frame.width,
-                    height: frame.height,
-                }
+                [ highlight.left, highlight.top, highlight.width, highlight.height ] = [ frame.x, frame.y, frame.width, frame.height ];
             }
 
-            this._highlights.push(rect);
+            this._highlights.push(highlight);
         }
+    },
+
+    /**
+     * Grab screenshot:
+     * focus window before taking
+     * a screenshot
+     *
+     * @return {Void}
+     */
+    screenshot: function() {
+        let index = this._highlight_index;
+        let highlight = this._highlights[index];
+        let actor = highlight._actor;
+        let x11 = actor.get_meta_window();
+
+        x11.activate(null);
+
+        this.parent();
     },
 
     /**

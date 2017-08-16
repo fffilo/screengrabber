@@ -380,12 +380,14 @@ const Highlights = new Lang.Class({
 
             if (hover) {
                 this._highlight_index = i;
-                return this.set_selection(rect.left, rect.top, rect.width, rect.height);
+                this.set_selection(rect.left, rect.top, rect.width, rect.height);
+                return this.emit('highlight', this._highlight_index);
             }
         }
 
         this._highlight_index = null;
-        return this.clear_selection();
+        this.clear_selection();
+        return this.emit('highlight', this._highlight_index);
     },
 
     /**
@@ -474,6 +476,7 @@ const Monitor = new Lang.Class({
     _init: function() {
         this.parent();
         this.actor.add_style_class_name('screengrabber-grabber-monitor');
+        this.connect('highlight', Lang.bind(this, this._handle_highlight));
     },
 
     /**
@@ -494,6 +497,22 @@ const Monitor = new Lang.Class({
 
             this._highlights.push(highlight);
         }
+    },
+
+    /**
+     * Signal highlight event handler
+     *
+     * @param  {Object} actor
+     * @param  {Number} index
+     * @return {Void}
+     */
+    _handle_highlight: function(actor, index) {
+        let highlight = this._highlights[index];
+        let actor = highlight._actor;
+
+        this.selection.actor.remove_style_class_name('screengrabber-selection-monitor-primary');
+
+        if (actor === Main.layoutManager.primaryMonitor) this.selection.actor.add_style_class_name('screengrabber-selection-monitor-primary');
     },
 
     /* --- */
@@ -522,7 +541,7 @@ const Window = new Lang.Class({
     _init: function() {
         this.parent();
         this.actor.add_style_class_name('screengrabber-grabber-window');
-
+        this.connect('highlight', Lang.bind(this, this._handle_highlight));
         this._shadows = false;
     },
 
@@ -571,6 +590,36 @@ const Window = new Lang.Class({
 
             this._highlights.push(highlight);
         }
+    },
+
+    /**
+     * Signal highlight event handler
+     *
+     * @param  {Object} actor
+     * @param  {Number} index
+     * @return {Void}
+     */
+    _handle_highlight: function(actor, index) {
+        let highlight = this._highlights[index];
+        let actor = highlight._actor;
+        let x11 = actor.get_meta_window();
+        let type = x11.get_window_type();
+
+        this.selection.actor.remove_style_class_name('screengrabber-selection-window-type-normal');
+        this.selection.actor.remove_style_class_name('screengrabber-selection-window-type-dialog');
+        this.selection.actor.remove_style_class_name('screengrabber-selection-window-type-modal-dialog');
+        this.selection.actor.remove_style_class_name('screengrabber-selection-window-mode-minimized');
+        this.selection.actor.remove_style_class_name('screengrabber-selection-window-mode-maximized-horizontally');
+        this.selection.actor.remove_style_class_name('screengrabber-selection-window-mode-maximized-vertically');
+        this.selection.actor.remove_style_class_name('screengrabber-selection-window-mode-fullscreen');
+
+        if (type === Meta.WindowType.NORMAL) this.selection.actor.add_style_class_name('screengrabber-selection-window-type-normal');
+        else if (type === Meta.WindowType.DIALOG) this.selection.actor.add_style_class_name('screengrabber-selection-window-type-dialog');
+        else if (type === Meta.WindowType.MODAL_DIALOG) this.selection.actor.add_style_class_name('screengrabber-selection-window-type-modal-dialog');
+        if (x11.minimized) this.selection.actor.add_style_class_name('screengrabber-selection-window-mode-minimized');
+        if (x11.maximized_horizontally) this.selection.actor.add_style_class_name('screengrabber-selection-window-mode-maximized-horizontally');
+        if (x11.maximized_vertically) this.selection.actor.add_style_class_name('screengrabber-selection-window-mode-maximized-vertically');
+        if (x11.fullscreen) this.selection.actor.add_style_class_name('screengrabber-selection-window-mode-fullscreen');
     },
 
     /**

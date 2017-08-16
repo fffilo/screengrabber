@@ -13,6 +13,7 @@ const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
 const File = Me.imports.file;
 const Screen = Me.imports.screen;
+const Clipboard = Me.imports.clipboard;
 const Notification = Me.imports.notification;
 const Container = Me.imports.container;
 const Grabber = Me.imports.grabber;
@@ -58,6 +59,7 @@ const Base = new Lang.Class({
      */
     destroy: function() {
         this.screen.destroy();
+        this.clipboard.destroy();
         //this.settings.run_dispose();
 
         this.parent();
@@ -69,6 +71,8 @@ const Base = new Lang.Class({
      * @return {Void}
      */
     _def: function() {
+        this.clipboard = new Clipboard.Clipboard();
+
         this.screen = new Screen.Screen();
         this.screen.connect('composited-changed', Lang.bind(this, this._handle_screen));
         this.screen.connect('monitors-changed', Lang.bind(this, this._handle_screen));
@@ -226,6 +230,10 @@ const Base = new Lang.Class({
         // show notification
         // to do: link destination
         this.notification.show(Me.metadata.name, dst);
+
+        // to do: get from settings
+        this.clipboard.set_text(File.filename_to_uri(dst));
+        //this.clipboard.set_image(dst);
 
         // clear grabber
         this._grabber.cancel();

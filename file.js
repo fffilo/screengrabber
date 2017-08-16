@@ -77,3 +77,13 @@ const move = function(src, dst) {
 
     return fsrc.move(fdst, flag, null, null);
 }
+
+/**
+ * Convert filename to URI
+ *
+ * @param  {String} path
+ * @return {String}
+ */
+const filename_to_uri = function(path) {
+    return GLib.filename_to_uri(path, null);
+}

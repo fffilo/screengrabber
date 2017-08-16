@@ -129,6 +129,8 @@ const Base = new Lang.Class({
      * @return {Void}
      */
     _handle_menu_item_desktop: function(actor, event) {
+        this.menu.close(0);
+
         this._grabber = new Grabber.Base();
         this._grabber.connect('screenshot', Lang.bind(this, this._handle_grabber_screenshot));
         this._grabber.connect('cancel', Lang.bind(this, this._handle_grabber_cancel));

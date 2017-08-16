@@ -516,6 +516,8 @@ const Window = new Lang.Class({
     _init: function() {
         this.parent();
         this.actor.add_style_class_name('screengrabber-grabber-window');
+
+        this._shadows = false;
     },
 
     /**
@@ -546,16 +548,47 @@ const Window = new Lang.Class({
         // iterete windows and push to this._highlights
         for (let i = 0; i < windows.length; i++) {
             let actor = windows[i];
-            let meta = actor.get_meta_window();
-            let frame = meta.get_frame_rect();
+            let rect = {};
 
-            this._highlights.push({
-                left: frame.x,
-                top: frame.y,
-                width: frame.width,
-                height: frame.height,
-            });
+            if (this.shadows) {
+                // get window size/position including window outer shadow
+                [ rect.left, rect.top ] = actor.get_position();
+                [ rect.width, rect.height] = actor.get_size();
+            }
+            else {
+                // get window frame rectangle
+                let frame = actor.get_meta_window().get_frame_rect();
+                rect = {
+                    left: frame.x,
+                    top: frame.y,
+                    width: frame.width,
+                    height: frame.height,
+                }
+            }
+
+            this._highlights.push(rect);
         }
+    },
+
+    /**
+     * Property shadows getter:
+     * should we include window outer shadow
+     * in screenshot
+     *
+     * @return {Boolean}
+     */
+    get shadows() {
+        return !!this._shadows;
+    },
+
+    /**
+     * Property shadows setter
+     *
+     * @param  {Boolean} value
+     * @return {Void}
+     */
+    set shadows(value) {
+        this._shadows = !!value;
     },
 
     /* --- */

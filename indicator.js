@@ -60,7 +60,7 @@ const Base = new Lang.Class({
     destroy: function() {
         this.screen.destroy();
         this.clipboard.destroy();
-        //this.settings.run_dispose();
+        this.settings.run_dispose();
 
         this.parent();
     },
@@ -71,6 +71,8 @@ const Base = new Lang.Class({
      * @return {Void}
      */
     _def: function() {
+        this.settings = Settings.settings();
+
         this.clipboard = new Clipboard.Clipboard();
 
         this.screen = new Screen.Screen();
@@ -79,9 +81,6 @@ const Base = new Lang.Class({
         this.screen.connect('size-changed', Lang.bind(this, this._handle_screen));
 
         this.notification = new Notification.Base();
-
-        // to do:
-        // settings
     },
 
     /**
@@ -164,6 +163,7 @@ const Base = new Lang.Class({
         this._grabber = new Grabber.Window();
         this._grabber.connect('screenshot', Lang.bind(this, this._handle_grabber_screenshot));
         this._grabber.connect('cancel', Lang.bind(this, this._handle_grabber_cancel));
+        this._grabber.shadows = this.settings.get_boolean('shadows');
         this._grabber.visible = true;
     },
 
@@ -213,27 +213,29 @@ const Base = new Lang.Class({
      * @return {Void}
      */
     _handle_grabber_screenshot: function(actor, event) {
-        // to do: flash settings
-        let area = event.area,
-            mute = false;
-        //if (!this.settings.get_boolean('show-flash'))
-        //    area = false;
-        //if (this.settings.get_boolean('mute-flash'))
-        //    mute = true;
-        this.flash(area, mute);
+        let flash = this.settings.get_string('flash');
+        this.flash(flash === 'both' || flash === 'video' ? event.area : false, !(flash === 'both' || flash === 'audio'));
 
-        // to do: filename template from settings
+        // filename template
+        let tpl = this.settings.get_string('template');
         let src = event.filename;
-        let dst = File.user_special_dir('pictures') + '/' + File.screenshot(event.area, File.DefaultTemplate);
-        File.move(src, dst);
+        let dst;
 
-        // show notification
-        // to do: link destination
-        this.notification.show(Me.metadata.name, dst);
+        if (tpl) {
+            dst = File.user_special_dir('pictures') + '/' + File.screenshot(event.area, tpl);
+            File.move(src, dst);
+        }
 
-        // to do: get from settings
-        this.clipboard.set_text(File.filename_to_uri(dst));
-        //this.clipboard.set_image(dst);
+        // show notification (to do: markup notification (link))
+        if (this.settings.get_boolean('notifications'))
+            this.notification.show(Me.metadata.name, File.filename_to_uri(dst || src));
+
+        // save to clipboard
+        let clip = this.settings.get_string('clipboard');
+        if (clip === 'uri')
+            this.clipboard.set_text(File.filename_to_uri(dst));
+        else if (clip === 'image')
+            this.clipboard.set_image(dst);
 
         // clear grabber
         this._grabber.cancel();

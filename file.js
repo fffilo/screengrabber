@@ -8,7 +8,7 @@ const GLib = imports.gi.GLib;
 const Gio = imports.gi.Gio;
 
 // Default screenshot filename template
-const DefaultTemplate = 'Screenshot from %Y-%m-%d %H-%M-%S.png';
+const DEFAULT_TEMPLATE = 'Screenshot from %Y-%m-%d %H-%M-%S.png';
 
 /**
  * Get full path of a special
@@ -44,7 +44,7 @@ const user_special_dir = function(dir) {
  */
 const screenshot = function(rect, template) {
     return new GLib.DateTime()
-        .format(template || DefaultTemplate)
+        .format(template || DEFAULT_TEMPLATE)
             .replace(/{width}/g, typeof rect === 'object' && ('width' in rect) ? rect.width : '_')
             .replace(/{height}/g, typeof rect === 'object' && ('height' in rect) ? rect.height : '_')
             .replace(/{username}/g, GLib.get_user_name())

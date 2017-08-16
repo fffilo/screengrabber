@@ -508,11 +508,10 @@ const Monitor = new Lang.Class({
      */
     _handle_highlight: function(actor, index) {
         let highlight = this._highlights[index];
-        let actor = highlight._actor;
 
         this.selection.actor.remove_style_class_name('screengrabber-selection-monitor-primary');
 
-        if (actor === Main.layoutManager.primaryMonitor) this.selection.actor.add_style_class_name('screengrabber-selection-monitor-primary');
+        if (highlight._actor === Main.layoutManager.primaryMonitor) this.selection.actor.add_style_class_name('screengrabber-selection-monitor-primary');
     },
 
     /* --- */
@@ -601,8 +600,7 @@ const Window = new Lang.Class({
      */
     _handle_highlight: function(actor, index) {
         let highlight = this._highlights[index];
-        let actor = highlight._actor;
-        let x11 = actor.get_meta_window();
+        let x11 = highlight._actor.get_meta_window();
         let type = x11.get_window_type();
 
         this.selection.actor.remove_style_class_name('screengrabber-selection-window-type-normal');
@@ -658,7 +656,12 @@ const Window = new Lang.Class({
      * @return {Void}
      */
     set shadows(value) {
-        this._shadows = !!value;
+        value = !!value;
+        if (this.shadows === value)
+            return;
+
+        this._shadows = value;
+        this._refresh_highlights();
     },
 
     /* --- */

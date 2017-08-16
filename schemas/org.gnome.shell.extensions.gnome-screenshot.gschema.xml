@@ -1,5 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <schemalist gettext-domain="screengrabber">
     <schema path="/org/gnome/shell/extensions/screengrabber/" id="org.gnome.shell.extensions.screengrabber">
+        <key name="notifications" type="b">
+            <default>true</default>
+            <summary>Show notifications</summary>
+            <description>Display notification on create screenshot</description>
+        </key>
+        <key name="clipboard" type="s">
+            <default>'none'</default>
+            <summary>Save to Clipboard</summary>
+            <description>Save file URI or image to Clipboard on create screenshot</description>
+        </key>
+        <key name="flash" type="s">
+            <default>'both'</default>
+            <summary>Flash effect</summary>
+            <description>Simulate flash effect on create screenshot</description>
+        </key>
+        <key name="shadows" type="b">
+            <default>true</default>
+            <summary>Window shadows</summary>
+            <description>Include shadows in Window screenshot</description>
+        </key>
+        <key name="template" type="s">
+            <default>'Screenshot from %Y-%m-%d %H-%M-%S.png'</default>
+            <summary>Filename template</summary>
+            <description>Filename template</description>
+        </key>
     </schema>
 </schemalist>

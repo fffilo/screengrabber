@@ -224,18 +224,18 @@ const Base = new Lang.Class({
         let dst;
 
         if (tpl) {
-            dst = File.user_special_dir('pictures') + '/' + File.screenshot(event.area, tpl);
+            dst = File.screenshot(event.area, tpl);
             File.move(src, dst);
         }
 
         // show notification (to do: markup notification (link))
         if (this.settings.get_boolean('notifications'))
-            this.notification.show(Me.metadata.name, File.filename_to_uri(dst || src));
+            this.notification.show(Me.metadata.name, File.to_uri(dst || src));
 
         // save to clipboard
         let clip = this.settings.get_string('clipboard');
         if (clip === 'uri')
-            this.clipboard.set_text(File.filename_to_uri(dst));
+            this.clipboard.set_text(File.to_uri(dst));
         else if (clip === 'image')
             this.clipboard.set_image(dst);
 

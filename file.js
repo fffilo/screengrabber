@@ -19,9 +19,14 @@ const DEFAULT_TEMPLATE = 'Screenshot from %Y-%m-%d %H-%M-%S.png';
  * @return {String}
  */
 const user_special_dir = function(dir) {
-    dir = (dir || '').toUpperCase();
+    dir = (dir || 'home').toUpperCase();
 
     if (dir === 'ROOT') return '/';
+    else if (dir === 'HOME') return GLib.get_home_dir();
+    else if (dir === 'TMP') return GLib.get_tmp_dir();
+    else if (dir === 'CACHE') return GLib.get_user_cache_dir();
+    else if (dir === 'CONFIG') return GLib.get_user_config_dir();
+    else if (dir === 'DATA') return GLib.get_user_data_dir();
     else if (dir === 'DESKTOP') return GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DESKTOP);
     else if (dir === 'DOCUMENTS') return GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOCUMENTS);
     else if (dir === 'DOWNLOAD') return GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD);
@@ -35,21 +40,59 @@ const user_special_dir = function(dir) {
 }
 
 /**
- * Get screenshot filename from
- * template
+ * Get screenshot filename from template.
+ * Result is always absoulute path of
+ * file. If template returns relative
+ * path, file will be added to special
+ * directory PICTURES.
  *
  * @param  {Object} rect     (optional)
  * @param  {String} template (optional)
  * @return {String}
  */
 const screenshot = function(rect, template) {
-    return new GLib.DateTime()
+    let result = new GLib.DateTime()
         .format(template || DEFAULT_TEMPLATE)
-            .replace(/{width}/g, typeof rect === 'object' && ('width' in rect) ? rect.width : '_')
-            .replace(/{height}/g, typeof rect === 'object' && ('height' in rect) ? rect.height : '_')
-            .replace(/{username}/g, GLib.get_user_name())
-            .replace(/{realname}/g, GLib.get_real_name())
-            .replace(/{hostname}/g, GLib.get_host_name());
+            .replace(/{width}/gi, typeof rect === 'object' && ('width' in rect) ? rect.width : '0')
+            .replace(/{height}/gi, typeof rect === 'object' && ('height' in rect) ? rect.height : '0')
+            .replace(/{username}/gi, GLib.get_user_name())
+            .replace(/{realname}/gi, GLib.get_real_name())
+            .replace(/{hostname}/gi, GLib.get_host_name())
+            .replace(/\$home(\W|$)/gi, user_special_dir('home') + '$1')
+            .replace(/\$tmp(\W|$)/gi, user_special_dir('tmp') + '$1')
+            .replace(/\$cache(\W|$)/gi, user_special_dir('cache') + '$1')
+            .replace(/\$config(\W|$)/gi, user_special_dir('config') + '$1')
+            .replace(/\$data(\W|$)/gi, user_special_dir('data') + '$1')
+            .replace(/\$desktop(\W|$)/gi, user_special_dir('desktop') + '$1')
+            .replace(/\$documents(\W|$)/gi, user_special_dir('documents') + '$1')
+            .replace(/\$download(\W|$)/gi, user_special_dir('download') + '$1')
+            .replace(/\$music(\W|$)/gi, user_special_dir('music') + '$1')
+            .replace(/\$pictures(\W|$)/gi, user_special_dir('pictures') + '$1')
+            .replace(/\$public_share(\W|$)/gi, user_special_dir('public_share') + '$1')
+            .replace(/\$templates(\W|$)/gi, user_special_dir('templates') + '$1')
+            .replace(/\$videos(\W|$)/gi, user_special_dir('videos') + '$1')
+            .replace(/\${home}/gi, user_special_dir('home'))
+            .replace(/\${tmp}/gi, user_special_dir('tmp'))
+            .replace(/\${cache}/gi, user_special_dir('cache'))
+            .replace(/\${config}/gi, user_special_dir('config'))
+            .replace(/\${data}/gi, user_special_dir('data'))
+            .replace(/\${desktop}/gi, user_special_dir('desktop'))
+            .replace(/\${documents}/gi, user_special_dir('documents'))
+            .replace(/\${download}/gi, user_special_dir('download'))
+            .replace(/\${music}/gi, user_special_dir('music'))
+            .replace(/\${pictures}/gi, user_special_dir('pictures'))
+            .replace(/\${public_share}/gi, user_special_dir('public_share'))
+            .replace(/\${templates}/gi, user_special_dir('templates'))
+            .replace(/\${videos}/gi, user_special_dir('videos'));
+
+    // absolute path
+    if (!GLib.path_is_absolute(result))
+        result = user_special_dir('pictures') + '/' + result;
+
+    // fix path
+    result = Gio.File.new_for_path(result).get_path();
+
+    return result;
 }
 
 /**
@@ -59,6 +102,8 @@ const screenshot = function(rect, template) {
  */
 const temp = function() {
     let [ handle, filename ] = GLib.file_open_tmp(null);
+    GLib.close(handle);
+
     return filename;
 }
 
@@ -84,6 +129,16 @@ const move = function(src, dst) {
  * @param  {String} path
  * @return {String}
  */
-const filename_to_uri = function(path) {
+const to_uri = function(path) {
     return GLib.filename_to_uri(path, null);
+}
+
+/**
+ * Get filename from URI
+ *
+ * @param  {String} path
+ * @return {String}
+ */
+const from_uri = function(path) {
+    return GLib.filename_from_uri(path, null);
 }

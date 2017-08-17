@@ -108,6 +108,16 @@ const temp = function() {
 }
 
 /**
+ * Check if file exists
+ *
+ * @param  {String}  path
+ * @return {Boolean}
+ */
+const exists = function(path) {
+    return GLib.file_test(path, GLib.FileTest.EXISTS);
+}
+
+/**
  * Move file from source to
  * destination
  *
@@ -140,5 +150,6 @@ const to_uri = function(path) {
  * @return {String}
  */
 const from_uri = function(path) {
-    return GLib.filename_from_uri(path, null);
+    let [ value, hostname ] = GLib.filename_from_uri(path, null);
+    return value;
 }

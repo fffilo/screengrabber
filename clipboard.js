@@ -8,6 +8,9 @@ const Lang = imports.lang;
 const Gtk = imports.gi.Gtk;
 const Gdk = imports.gi.Gdk;
 const GdkPixbuf = imports.gi.GdkPixbuf;
+const ExtensionUtils = imports.misc.extensionUtils;
+const Me = ExtensionUtils.getCurrentExtension();
+const File = Me.imports.file;
 
 /**
  * Clipboard constructor
@@ -66,13 +69,16 @@ const Clipboard = new Lang.Class({
      * Set image to clipboard
      *
      * proxy for Gtk.Clipboard.prototype.set_image
+     * (with file path to image conversion)
      *
      * @param  {Mixed} image
      * @return {Void}
      */
     set_image: function(image) {
-        if (typeof image === 'string')
+        if (typeof image === 'string' && File.exists(image))
             image = GdkPixbuf.Pixbuf.new_from_file(image);
+        else if (typeof image === 'string' && File.exists(File.from_uri(image)))
+            image = GdkPixbuf.Pixbuf.new_from_file(File.from_uri(image));
         else if (image instanceof Gtk.Image)
             image = image.get_pixbuf();
 

@@ -153,3 +153,16 @@ const from_uri = function(path) {
     let [ value, hostname ] = GLib.filename_from_uri(path, null);
     return value;
 }
+
+/**
+ * Open file with default application
+ *
+ * @param  {String} path
+ * @return {Void}
+ */
+const launch = function(path) {
+    if (exists(path))
+        path = to_uri(path)
+
+    Gio.AppInfo.launch_default_for_uri(path, null);
+}

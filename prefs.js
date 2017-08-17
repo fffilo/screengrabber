@@ -9,6 +9,7 @@ const Gdk = imports.gi.Gdk;
 const GdkPixbuf = imports.gi.GdkPixbuf;
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
+const File = Me.imports.file;
 const Icons = Me.imports.icons;
 const Settings = Me.imports.settings;
 const Translation = Me.imports.translation;
@@ -57,6 +58,12 @@ const Widget = new GObject.Class({
         this._ui();
     },
 
+    destroy: function() {
+        this.parent();
+        this.settings.run_dispose();
+        this.parent();
+    },
+
     /**
      * Initialize object properties
      *
@@ -64,7 +71,7 @@ const Widget = new GObject.Class({
      */
     _def: function() {
         this.settings = Settings.settings();
-        //this.settings.connect('changed', Lang.bind(this, this._handle_settings));
+        this.settings.connect('changed', Lang.bind(this, this._handle_settings));
     },
 
     /**
@@ -111,9 +118,28 @@ const Widget = new GObject.Class({
         this.ui.settings.page = this._page();
         this.ui.settings.page.get_style_context().add_class('screengrabber-prefs-page-settings');
 
-        this.ui.settings.wip = new Label({ label: 'Work in progress...', });
-        this.ui.settings.wip.set_opacity(0.5);
-        this.ui.settings.page.actor.add(this.ui.settings.wip);
+        this.ui.settings.notifications = new InputSwitch('notifications', this.settings.get_boolean('notifications'), _("Show notifications"), _("Display notification on create screenshot"));
+        this.ui.settings.notifications.connect('changed', Lang.bind(this, this._handle_widget));
+        this.ui.settings.page.actor.add(this.ui.settings.notifications);
+
+        this.ui.settings.clipboard = new InputComboBox('clipboard', this.settings.get_string('clipboard'), _("Save to Clipboard"), _("Save file URI or image to Clipboard on create screenshot"), { 'none': _("None"), 'uri': _("URI"), 'image': _("Image"), });
+        this.ui.settings.clipboard.connect('changed', Lang.bind(this, this._handle_widget));
+        this.ui.settings.page.actor.add(this.ui.settings.clipboard);
+
+        this.ui.settings.flash = new InputComboBox('flash', this.settings.get_string('flash'), _("Flash effect"), _("Simulate flash effect on create screenshot"), { 'audio': _("Audio"), 'video': _("Video"), 'both': _("Both"), });
+        this.ui.settings.flash.connect('changed', Lang.bind(this, this._handle_widget));
+        this.ui.settings.page.actor.add(this.ui.settings.flash);
+
+        this.ui.settings.shadows = new InputSwitch('shadows', this.settings.get_boolean('shadows'), _("Window shadows"), _("Include shadows in Window screenshot"));
+        this.ui.settings.shadows.connect('changed', Lang.bind(this, this._handle_widget));
+        this.ui.settings.page.actor.add(this.ui.settings.shadows);
+
+        this.ui.settings.template = new InputEntry('template', this.settings.get_string('template'), _("Filename template"), _("Screenshot filename template"));
+        this.ui.settings.template.actor.set_orientation(Gtk.Orientation.VERTICAL);
+        this.ui.settings.template._widget.secondary_icon_name = 'dialog-question-symbolic';
+        this.ui.settings.template._widget.connect('icon-press', Lang.bind(this, this._handle_help));
+        this.ui.settings.template.connect('changed', Lang.bind(this, this._handle_widget));
+        this.ui.settings.page.actor.add(this.ui.settings.template);
 
         return this.ui.settings.page;
     },
@@ -197,26 +223,23 @@ const Widget = new GObject.Class({
     },
 
     /**
-     * Bind events
-     *
-     * @return {Void}
-     */
-    _bind: function() {
-        this.connect('destroy', Lang.bind(this, this._handle_destroy));
-    },
-
-    /**
-     * Widget destroy event handler
+     * Settings input widget help click event handler
      *
      * @param  {Object} widget
      * @param  {Object} event
      * @return {Void}
      */
-    _handle_destroy: function(widget, event) {
-        if (this.settings)
-            this.settings.run_dispose();
+    _handle_help: function(widget, event) {
+        File.launch('https://github.com/fffilo/screengrabber/blob/master/SAVING.md');
     },
 
+    /**
+     * Settings input widget change event handler
+     *
+     * @param  {Object} widget
+     * @param  {Object} event
+     * @return {Void}
+     */
     _handle_widget: function(widget, event) {
         let old_value = this.settings['get_' + event.type](event.key);
 
@@ -262,7 +285,6 @@ const Box = new GObject.Class({
         this.parent();
 
         this.actor = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, });
-        this.actor.get_style_context().add_class('actor');
         this.add(this.actor);
     },
 
@@ -334,11 +356,15 @@ const Input = new GObject.Class({
         this.parent();
         this.actor.set_orientation(Gtk.Orientation.HORIZONTAL);
 
-        this._key = key;
-        this._label = new Gtk.Label({ label: text, xalign: 0, tooltip_text: tooltip || '' });
-        this._widget = null;
+        let eb = new Gtk.EventBox();
+        eb.set_visible_window(false);
+        eb.connect('button-press-event', Lang.bind(this, this._handle_label));
+        this.actor.pack_start(eb, true, true, 0);
 
-        this.actor.pack_start(this._label, true, true, 0);
+        this._key = key;
+        this._widget = null;
+        this._label = new Gtk.Label({ label: text, xalign: 0, tooltip_text: tooltip || '' });
+        eb.add(this._label);
     },
 
     /**
@@ -361,6 +387,22 @@ const Input = new GObject.Class({
     },
 
     /**
+     * Label click event handler
+     *
+     * @param  {Object} widget
+     * @param  {Object} event
+     * @return {Void}
+     */
+    _handle_label: function(widget, event) {
+        if (!this._widget)
+            return;
+        //if (!this._widget.get_can_focus())
+        //    return;
+
+        this._widget.grab_focus();
+    },
+
+    /**
      * Input change event handler
      *
      * @param  {Object} widget
@@ -379,7 +421,6 @@ const Input = new GObject.Class({
 });
 
 Signals.addSignalMethods(Input.prototype);
-
 
 /**
  * InputSwitch constructor
@@ -416,7 +457,7 @@ const InputSwitch = new GObject.Class({
     _handle_change: function(widget) {
         this.emit('changed', {
             key: this._key,
-            value: widget.active,
+            value: this.value,
             type: 'boolean',
         });
     },
@@ -512,6 +553,69 @@ const InputComboBox = new GObject.Class({
      */
     set value(value) {
         this._widget.set_active_id(value);
+    },
+
+    /* --- */
+
+});
+
+/**
+ * InputEntry constructor
+ * extends Input
+ *
+ * @param  {Object}
+ * @return {Object}
+ */
+const InputEntry = new GObject.Class({
+
+    Name: 'Prefs.InputEntry',
+    GTypeName: 'ScreenGrabberPrefsInputEntry',
+    Extends: Input,
+
+    /**
+     * Constructor
+     *
+     * @return {Void}
+     */
+    _init: function(key, value, text, tooltip) {
+        this.parent(key, text, tooltip);
+
+        this._widget = new Gtk.Entry({ text: value });
+        this._widget.connect('notify::text', Lang.bind(this, this._handle_change));
+        this.actor.add(this._widget);
+    },
+
+    /**
+     * Input change event handler
+     *
+     * @param  {Object} widget
+     * @return {Void}
+     */
+    _handle_change: function(widget) {
+        this.emit('changed', {
+            key: this._key,
+            value: this.value,
+            type: 'string',
+        });
+    },
+
+    /**
+     * Value getter
+     *
+     * @return {String}
+     */
+    get value() {
+        return this._widget.text;
+    },
+
+    /**
+     * Value setter
+     *
+     * @param  {String} value
+     * @return {Void}
+     */
+    set value(value) {
+        this._widget.text = value;
     },
 
     /* --- */

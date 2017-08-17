@@ -1,6 +1,6 @@
 {
     "description": "Create and store screenshots",
-    "description-html": "Create and store screenshots",
+    "description-html": "GNOME shell extension for creating and storing screenshots.",
     "gettext-domain": "screengrabber",
     "license": "GNU General Public License v3.0",
     "license-html": "This program comes with ABSOLUTELY NO WARRANTY.\nSee the <a href=\"https:\/\/www.gnu.org\/licenses\/gpl-3.0.html\">GNU General Public License v3.0</a> for details.",

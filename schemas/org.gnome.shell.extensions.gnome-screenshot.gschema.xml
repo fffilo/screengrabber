@@ -24,7 +24,7 @@
         <key name="template" type="s">
             <default>'Screenshot from %Y-%m-%d %H-%M-%S.png'</default>
             <summary>Filename template</summary>
-            <description>Filename template</description>
+            <description>Screenshot filename template</description>
         </key>
     </schema>
 </schemalist>

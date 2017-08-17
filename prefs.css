@@ -1,0 +1,7 @@
+ScreenGrabberPrefsBox { border: none; }
+ScreenGrabberPrefsInput { padding: 0.5em; }
+
+.screengrabber-prefs-page { padding: 2em; }
+.screengrabber-prefs-page-about-title { padding-bottom: 2em; font-weight: bold; }
+.screengrabber-prefs-page-about-description { padding: 2em; }
+.screengrabber-prefs-page-about-license { font-size: 0.8em; padding-top: 3.25em; }

@@ -9,6 +9,7 @@ const Main = imports.ui.main;
 const St = imports.gi.St;
 const PanelMenu = imports.ui.panelMenu;
 const PopupMenu = imports.ui.popupMenu;
+const Util = imports.misc.util;
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
 const File = Me.imports.file;
@@ -191,7 +192,7 @@ const Base = new Lang.Class({
      * @return {Void}
      */
     _handle_menu_item_preferences: function(actor, event) {
-
+        Util.spawn(['gnome-shell-extension-prefs', Me.metadata.uuid]);
     },
 
     /**

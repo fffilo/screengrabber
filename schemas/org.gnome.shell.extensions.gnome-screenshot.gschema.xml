@@ -27,22 +27,22 @@
             <description>Screenshot filename template</description>
         </key>
         <key name="shortcut-desktop" type="as">
-            <default><![CDATA[['<Super>F11']]]></default>
+            <default><![CDATA[['<Super>F9']]]></default>
             <summary>Keyboard Shortcut for Desktop Screenshot</summary>
             <description>Keyboard Shortcut for Desktop Screenshot</description>
         </key>
         <key name="shortcut-monitor" type="as">
-            <default>[]</default>
+            <default><![CDATA[['<Super>F10']]]></default>
             <summary>Keyboard Shortcut for Monitor Screenshot</summary>
             <description>Keyboard Shortcut for Monitor Screenshot</description>
         </key>
         <key name="shortcut-window" type="as">
-            <default>[]</default>
+            <default><![CDATA[['<Super>F11']]]></default>
             <summary>Keyboard Shortcut for Window Screenshot</summary>
             <description>Keyboard Shortcut for Window Screenshot</description>
         </key>
         <key name="shortcut-selection" type="as">
-            <default>[]</default>
+            <default><![CDATA[['<Super>F12']]]></default>
             <summary>Keyboard Shortcut for Selection Screenshot</summary>
             <description>Keyboard Shortcut for Selection Screenshot</description>
         </key>

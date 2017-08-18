@@ -321,7 +321,40 @@ const Widget = new GObject.Class({
         let model = this.ui.keybinds.treeview.get_model();
         let [ ok, iter ] = model.get_iter_from_string(path);
         let name = model.get_value(iter, 0);
+        let warning = false;
 
+        // don't allow key tab or key without ctrl/alt/super
+        if (value.match(/<Tab>/gi) || !value.match(/<Primary>|<Alt>|<Super>/gi))
+            warning = _("The shortcut \"%s\" cannot be used.").format(value);
+
+        // don't allow duplicates
+        let actions = [ 'shortcut-desktop', 'shortcut-monitor', 'shortcut-window', 'shortcut-selection' ];
+        for (let i in actions) {
+            if (actions[i] === name)
+                continue;
+
+            if (this.settings.get_strv(actions[i])[0] === value) {
+                warning = _("The shortcut \"%s\" already in use.").format(value);
+                break;
+            }
+        }
+
+        // display warning dialog
+        if (warning) {
+            let dlg = new Gtk.MessageDialog({
+                transient_for: this.get_toplevel(),
+                modal: true,
+                buttons: Gtk.ButtonsType.OK,
+                message_type: Gtk.MessageType.WARNING,
+                text: warning,
+            });
+            dlg.run();
+            dlg.destroy();
+
+            return;
+        }
+
+        // set
         model.set(iter, [ 2, 3 ], [ mods, key ]);
         this.settings.set_strv(name, [value]);
     },

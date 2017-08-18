@@ -1,7 +1,7 @@
 INSTALL_PATH = ~/.local/share/gnome-shell/extensions
 INSTALL_NAME = screengrabber@gnome-shell-exstensions.fffilo.github.com
 BUILD_DIR = _build
-FILES = assets/ CHANGELOG.md clipboard.js container.js convenience.js COPYING extension.js file.js grabber.js icons.js indicator.js metadata.json notification.js prefs.css prefs.js README.md SAVING.md schemas/ screen.js settings.js stylesheet.css translation.js
+FILES = assets/ CHANGELOG.md clipboard.js container.js convenience.js COPYING extension.js file.js grabber.js icons.js indicator.js keybind.js metadata.json notification.js prefs.css prefs.js README.md SAVING.md schemas/ screen.js settings.js stylesheet.css translation.js
 
 install: build
 	rm -rf $(INSTALL_PATH)/$(INSTALL_NAME)

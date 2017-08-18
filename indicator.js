@@ -12,6 +12,7 @@ const PopupMenu = imports.ui.popupMenu;
 const Util = imports.misc.util;
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
+const Keybind = Me.imports.keybind;
 const File = Me.imports.file;
 const Screen = Me.imports.screen;
 const Clipboard = Me.imports.clipboard;
@@ -47,6 +48,7 @@ const Base = new Lang.Class({
 
         this._def();
         this._ui();
+        this._bind();
 
         this._handle_screen(this.screen);
 
@@ -59,6 +61,8 @@ const Base = new Lang.Class({
      * @return {Void}
      */
     destroy: function() {
+        this._unbind();
+
         this.screen.destroy();
         this.clipboard.destroy();
         this.settings.run_dispose();
@@ -73,6 +77,7 @@ const Base = new Lang.Class({
      */
     _def: function() {
         this.settings = Settings.settings();
+        this.settings.connect('changed', Lang.bind(this, this._handle_settings));
 
         this.clipboard = new Clipboard.Clipboard();
 
@@ -120,6 +125,62 @@ const Base = new Lang.Class({
         this.menuPreferences = new PopupMenu.PopupMenuItem(_("Preferences"));
         this.menuPreferences.connect('activate', Lang.bind(this, this._handle_menu_item_preferences));
         this.menu.addMenuItem(this.menuPreferences);
+    },
+
+    /**
+     * Add keybindings
+     *
+     * @return {Void}
+     */
+    _bind: function() {
+        this._unbind();
+
+        let actions = [ 'desktop', 'monitor', 'window', 'selection' ];
+        for (let i in actions) {
+            Keybind.add('shortcut-' + actions[i], this.settings, Lang.bind(this, this._handle_keybinding, actions[i]));
+        }
+    },
+
+    /**
+     * Remove keybindings
+     *
+     * @return {Void}
+     */
+    _unbind: function() {
+        let actions = [ 'desktop', 'monitor', 'window', 'selection' ];
+        for (let i in actions) {
+            Keybind.remove('shortcut-' + actions[i]);
+        }
+    },
+
+    /**
+     * Settings changed event handler
+     *
+     * @param  {Object} actor
+     * @param  {String} key
+     * @return {Void}
+     */
+    _handle_settings: function(actor, key) {
+        if (key.startsWith('shortcut-'))
+            this._bind();
+    },
+
+    /**
+     * Shortcut keypress event handler
+     *
+     * @param  {Object} display
+     * @param  {Object} screen
+     * @param  {Object} window
+     * @param  {Object} binding
+     * @param  {String} action
+     * @return {Void}
+     */
+    _handle_keybinding: function(display, screen, window, binding, action) {
+        let prop = 'menu' + action.charAt(0).toUpperCase() + action.slice(1);
+        let item = this[prop];
+
+        if (item && item._sensitive)
+            item.activate();
     },
 
     /**

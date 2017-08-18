@@ -87,8 +87,8 @@ const Widget = new GObject.Class({
         let notebook = new Gtk.Notebook();
         this.ui = {};
         notebook.append_page(this._page_settings(), new Gtk.Label({ label: _("Settings"), }));
-        notebook.append_page(this._page_keybinds(), new Gtk.Label({ label: _("Key Bindings"), }));
         notebook.append_page(this._page_providers(), new Gtk.Label({ label: _("Providers"), }));
+        notebook.append_page(this._page_keybinds(), new Gtk.Label({ label: _("Key Bindings"), }));
         notebook.append_page(this._page_about(), new Gtk.Label({ label: _("About"), }));
         this.add(notebook);
 
@@ -145,24 +145,6 @@ const Widget = new GObject.Class({
     },
 
     /**
-     * Create new key bindings page
-     *
-     * @return {Object}
-     */
-    _page_keybinds: function() {
-        this.ui.keybinds = {};
-        this.ui.keybinds.page = this._page();
-        this.ui.keybinds.page.get_style_context().add_class('screengrabber-prefs-page-keybinds');
-
-        this.ui.keybinds.wip = new Label({ label: 'Work in progress...', });
-        this.ui.keybinds.wip.set_opacity(0.5);
-        this.ui.keybinds.page.actor.add(this.ui.keybinds.wip);
-
-        // work in progress
-        return this.ui.keybinds.page;
-    },
-
-    /**
      * Create new providers page
      *
      * @return {Object}
@@ -178,6 +160,73 @@ const Widget = new GObject.Class({
 
         // work in progress
         return this.ui.providers.page;
+    },
+
+    /**
+     * Create new key bindings page
+     *
+     * @return {Object}
+     */
+    _page_keybinds: function() {
+        this.ui.keybinds = {};
+        this.ui.keybinds.page = this._page();
+        this.ui.keybinds.page.get_style_context().add_class('screengrabber-prefs-page-keybinds');
+
+        let model = new Gtk.ListStore();
+        model.set_column_types([
+            GObject.TYPE_STRING,
+            GObject.TYPE_STRING,
+            GObject.TYPE_INT,
+            GObject.TYPE_INT,
+        ]);
+
+        this.ui.keybinds.treeview = new Gtk.TreeView({
+            expand: true,
+            model: model,
+        });
+        this.ui.keybinds.page.actor.add(this.ui.keybinds.treeview);
+
+        let render, column;
+        render = new Gtk.CellRendererText();
+        column = new Gtk.TreeViewColumn({
+          title: _("Screenshot Action"),
+          expand: true,
+        });
+        column.pack_start(render, true);
+        column.add_attribute(render, 'text', 1);
+        this.ui.keybinds.treeview.append_column(column);
+
+        render = new Gtk.CellRendererAccel({
+            editable: true,
+            accel_mode: Gtk.CellRendererAccelMode.GTK,
+        });
+        render.connect('accel-edited', Lang.bind(this, this._handle_shortcut_edited));
+        render.connect('accel-cleared', Lang.bind(this, this._handle_shortcut_cleared));
+        column = new Gtk.TreeViewColumn({
+            title: _("Shortcut"),
+            min_width: 180,
+        });
+        column.pack_end(render, false);
+        column.add_attribute(render, 'accel-mods', 2);
+        column.add_attribute(render, 'accel-key', 3);
+        this.ui.keybinds.treeview.append_column(column);
+
+        let shortcut = [
+            //[ 'name', 'value', ],
+            [ 'shortcut-desktop', _("Desktop"), ],
+            [ 'shortcut-monitor', _("Monitor"), ],
+            [ 'shortcut-window', _("Window"), ],
+            [ 'shortcut-selection', _("Selection"), ],
+        ];
+        for (let [ name, value ] of shortcut) {
+            let bind = this.settings.get_strv(name)[0];
+            let row = model.append();
+            let [ key, mods ] = bind ? Gtk.accelerator_parse(bind) : [ 0, 0 ];
+
+            model.set(row, [ 0, 1, 2, 3 ], [ name, value, mods, key ]);
+        }
+
+        return this.ui.keybinds.page;
     },
 
     /**
@@ -225,22 +274,22 @@ const Widget = new GObject.Class({
     /**
      * Settings input widget help click event handler
      *
-     * @param  {Object} widget
+     * @param  {Object} actor
      * @param  {Object} event
      * @return {Void}
      */
-    _handle_help: function(widget, event) {
+    _handle_help: function(actor, event) {
         File.launch('https://github.com/fffilo/screengrabber/blob/master/SAVING.md');
     },
 
     /**
      * Settings input widget change event handler
      *
-     * @param  {Object} widget
+     * @param  {Object} actor
      * @param  {Object} event
      * @return {Void}
      */
-    _handle_widget: function(widget, event) {
+    _handle_widget: function(actor, event) {
         let old_value = this.settings['get_' + event.type](event.key);
 
         if (old_value != event.value)
@@ -250,12 +299,49 @@ const Widget = new GObject.Class({
     /**
      * Settings changed event handler
      *
-     * @param  {Object} widget
+     * @param  {Object} actor
      * @param  {Object} event
      * @return {Void}
      */
-    _handle_settings: function(widget, event) {
+    _handle_settings: function(actor, event) {
         // pass
+    },
+
+    /**
+     * Shortcut (cell-renderer-accel) edited event handler
+     *
+     * @param  {Object} actor
+     * @param  {String} path
+     * @param  {Number} key
+     * @param  {Number} mods
+     * @return {Void}
+     */
+    _handle_shortcut_edited: function(actor, path, key, mods) {
+        let value = Gtk.accelerator_name(key, mods);
+        let model = this.ui.keybinds.treeview.get_model();
+        let [ ok, iter ] = model.get_iter_from_string(path);
+        let name = model.get_value(iter, 0);
+
+        model.set(iter, [ 2, 3 ], [ mods, key ]);
+        this.settings.set_strv(name, [value]);
+    },
+
+    /**
+     * Shortcut (cell-renderer-accel) cleared event handler
+     *
+     * @param  {Object} actor
+     * @param  {String} path
+     * @param  {Number} key
+     * @param  {Number} mods
+     * @return {Void}
+     */
+    _handle_shortcut_cleared: function(actor, path, key, mods) {
+        let model = this.ui.keybinds.treeview.get_model();
+        let [ ok, iter ] = model.get_iter_from_string(path);
+        let name = model.get_value(iter, 0);
+
+        model.set(iter, [ 2, 3 ], [ 0, 0 ]);
+        this.settings.set_strv(name, []);
     },
 
     /* --- */
@@ -389,11 +475,11 @@ const Input = new GObject.Class({
     /**
      * Label click event handler
      *
-     * @param  {Object} widget
+     * @param  {Object} actor
      * @param  {Object} event
      * @return {Void}
      */
-    _handle_label: function(widget, event) {
+    _handle_label: function(actor, event) {
         if (!this._widget)
             return;
         //if (!this._widget.get_can_focus())
@@ -405,14 +491,15 @@ const Input = new GObject.Class({
     /**
      * Input change event handler
      *
-     * @param  {Object} widget
+     * @param  {Object} actor
+     * @param  {Object} event
      * @return {Void}
      */
-    _handle_change: function(widget) {
+    _handle_change: function(actor, event) {
         this.emit('changed', {
             key: this._key,
-            value: widget.value,
-            type: typeof widget.value,
+            value: actor.value,
+            type: typeof actor.value,
         });
     },
 
@@ -451,10 +538,11 @@ const InputSwitch = new GObject.Class({
     /**
      * Input change event handler
      *
-     * @param  {Object} widget
+     * @param  {Object} actor
+     * @param  {Object} event
      * @return {Void}
      */
-    _handle_change: function(widget) {
+    _handle_change: function(actor) {
         this.emit('changed', {
             key: this._key,
             value: this.value,
@@ -525,10 +613,11 @@ const InputComboBox = new GObject.Class({
     /**
      * Widget change event handler
      *
-     * @param  {Object} widget
+     * @param  {Object} actor
+     * @param  {Object} event
      * @return {Void}
      */
-    _handle_change: function(widget) {
+    _handle_change: function(actor, event) {
         this.emit('changed', {
             key: this._key,
             value: this.value,
@@ -588,10 +677,11 @@ const InputEntry = new GObject.Class({
     /**
      * Input change event handler
      *
-     * @param  {Object} widget
+     * @param  {Object} actor
+     * @param  {Object} event
      * @return {Void}
      */
-    _handle_change: function(widget) {
+    _handle_change: function(actor, event) {
         this.emit('changed', {
             key: this._key,
             value: this.value,

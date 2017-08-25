@@ -19,6 +19,7 @@ const Clipboard = Me.imports.clipboard;
 const Notification = Me.imports.notification;
 const Container = Me.imports.container;
 const Grabber = Me.imports.grabber;
+const Upload = Me.imports.upload;
 const Icons = Me.imports.icons;
 const Settings = Me.imports.settings;
 const Translation = Me.imports.translation;
@@ -289,6 +290,11 @@ const Base = new Lang.Class({
             dst = File.screenshot(event.area, tpl);
             File.move(src, dst);
         }
+
+        // to do: upload
+        //let uploader = new Upload.Imgur();
+        //uploader.connect('request', function(actor, event) { global.log(Me.metadata.uuid, JSON.stringify(event)); });
+        //uploader.upload(dst || src);
 
         // show notification (to do: markup notification (link))
         if (this.settings.get_boolean('notifications'))

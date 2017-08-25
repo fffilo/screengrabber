@@ -133,6 +133,11 @@ const move = function(src, dst) {
     return fsrc.move(fdst, flag, null, null);
 }
 
+const basename = function(path) {
+    let file = Gio.File.new_for_path(path);
+    return file.get_basename();
+}
+
 /**
  * Convert filename to URI
  *
@@ -152,6 +157,36 @@ const to_uri = function(path) {
 const from_uri = function(path) {
     let [ value, hostname ] = GLib.filename_from_uri(path, null);
     return value;
+}
+
+/**
+ * Get file contents
+ *
+ * @param  {String}  path
+ * @param  {Boolean} encode (optional)
+ * @return {Mixed}
+ */
+const contents = function(path, encode) {
+    let [ ok, contents ] = GLib.file_get_contents(path);
+    let result = ok ? contents : null;
+
+    if (result && encode)
+        result = GLib.base64_encode(result);
+
+    return result;
+}
+
+/**
+ * Get file mime type
+ *
+ * @param  {String} path
+ * @return {String}
+ */
+const mimetype = function(path) {
+    let file = Gio.File.new_for_path(path)
+    let info = file.query_info('*', Gio.FileQueryInfoFlags.NONE, null);
+
+    return info.get_content_type();
 }
 
 /**

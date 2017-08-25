@@ -21,10 +21,15 @@
             <summary>Window shadows</summary>
             <description>Include shadows in Window screenshot</description>
         </key>
-        <key name="template" type="s">
+        <key name="filename-template" type="s">
             <default>'Screenshot from %Y-%m-%d %H-%M-%S.png'</default>
             <summary>Filename template</summary>
             <description>Screenshot filename template</description>
+        </key>
+        <key name="upload-provider" type="s">
+            <default>'(none)'</default>
+            <summary>Upload Provider</summary>
+            <description>Upload Provider</description>
         </key>
         <key name="shortcut-desktop" type="as">
             <default><![CDATA[['<Super>F9']]]></default>

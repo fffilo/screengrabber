@@ -10,6 +10,7 @@ const Signals = imports.signals;
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
 const File = Me.imports.file;
+const Upload = Me.imports.upload;
 
 /**
  * User agent
@@ -279,7 +280,7 @@ const Base = new Lang.Class({
             }
         }
 
-        return this.emit('request', event);
+        return this.emit('done', event);
     },
 
     /**
@@ -628,7 +629,7 @@ const DropfileTo = new Lang.Class({
     },
 
     _handle_message_success: function(session, message, data) {
-        this.emit('success', JSON.parse(message.response_body.data).url);
+        this.emit('done', JSON.parse(message.response_body.data).url);
         global.log(Me.metadata.uuid, "success", JSON.parse(message.response_body.data).url);
     },
 
@@ -800,3 +801,16 @@ const PicPaste = new Lang.Class({
     },
 
 });
+
+/**
+ * Provider exists
+ *
+ * @param  {String} name
+ * @return {Object}
+ */
+const new_by_name = function(name) {
+    if (Upload[name] && Upload[name].prototype && Upload[name].prototype.constructor)
+        return new Upload[name]();
+
+    return null;
+}

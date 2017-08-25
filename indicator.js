@@ -154,6 +154,50 @@ const Base = new Lang.Class({
         }
     },
 
+    _screenshot_flash: function(path, area) {
+        let settings = this.settings.get_string('flash');
+        let video = settings === 'both' || settings === 'video' ? area : false;
+        let audio = !(settings === 'both' || settings === 'video');
+        this.flash(video, audio);
+
+        return path;
+    },
+
+    _screenshot_move: function(path, area) {
+        let template = this.settings.get_string('filename-template');
+        let provider = this.settings.get_string('upload-provider');
+        let notifications = this.settings.get_boolean('notifications');
+        let clipboard = this.settings.get_string('clipboard');
+
+        if (template) {
+            let result = File.screenshot(area, template);
+            File.move(path, result);
+
+            path = result;
+        }
+
+        if (notifications && !Upload.new_by_name(provider))
+            this.notification.show(Me.metadata.name, File.to_uri(path));
+
+        if (clipboard === 'uri')
+            this.clipboard.set_text(File.to_uri(path));
+        else if (clipboard === 'image')
+            this.clipboard.set_image(path);
+
+        return path;
+    },
+
+    _screenshot_upload: function(path, area) {
+        let provider = this.settings.get_string('upload-provider');
+        let upload = Upload.new_by_name(provider);
+        if (upload) {
+            upload.connect('done', Lang.bind(this, this._handle_upload));
+            upload.upload(path);
+        }
+
+        return path;
+    },
+
     /**
      * Settings changed event handler
      *
@@ -182,6 +226,24 @@ const Base = new Lang.Class({
 
         if (item && item._sensitive)
             item.activate();
+    },
+
+    /**
+     * Uploader done signal event handler
+     *
+     * @param  {Object} actor
+     * @param  {Object} event
+     * @return {Void}
+     */
+    _handle_upload: function(actor, event) {
+        let notifications = this.settings.get_boolean('notifications');
+        let clipboard = this.settings.get_string('clipboard');
+        let uri = event.data.preview || event.data.error || event.status.description;
+
+        if (notifications)
+            this.notification.show(Me.metadata.name, uri);
+        if (clipboard === 'uri')
+            this.clipboard.set_text(uri);
     },
 
     /**
@@ -278,36 +340,13 @@ const Base = new Lang.Class({
      * @return {Void}
      */
     _handle_grabber_screenshot: function(actor, event) {
-        let flash = this.settings.get_string('flash');
-        this.flash(flash === 'both' || flash === 'video' ? event.area : false, !(flash === 'both' || flash === 'audio'));
+        let path = event.filename;
+        let area = event.area;
 
-        // filename template
-        let tpl = this.settings.get_string('template');
-        let src = event.filename;
-        let dst;
+        path = this._screenshot_flash(path, area);
+        path = this._screenshot_move(path, area);
+        path = this._screenshot_upload(path, area);
 
-        if (tpl) {
-            dst = File.screenshot(event.area, tpl);
-            File.move(src, dst);
-        }
-
-        // to do: upload
-        //let uploader = new Upload.Imgur();
-        //uploader.connect('request', function(actor, event) { global.log(Me.metadata.uuid, JSON.stringify(event)); });
-        //uploader.upload(dst || src);
-
-        // show notification (to do: markup notification (link))
-        if (this.settings.get_boolean('notifications'))
-            this.notification.show(Me.metadata.name, File.to_uri(dst || src));
-
-        // save to clipboard
-        let clip = this.settings.get_string('clipboard');
-        if (clip === 'uri')
-            this.clipboard.set_text(File.to_uri(dst));
-        else if (clip === 'image')
-            this.clipboard.set_image(dst);
-
-        // clear grabber
         this._grabber.cancel();
     },
 

@@ -134,12 +134,12 @@ const Widget = new GObject.Class({
         this.ui.settings.shadows.connect('changed', Lang.bind(this, this._handle_widget));
         this.ui.settings.page.actor.add(this.ui.settings.shadows);
 
-        this.ui.settings.template = new InputEntry('template', this.settings.get_string('template'), _("Filename template"), _("Screenshot filename template"));
-        this.ui.settings.template.actor.set_orientation(Gtk.Orientation.VERTICAL);
-        this.ui.settings.template._widget.secondary_icon_name = 'dialog-question-symbolic';
-        this.ui.settings.template._widget.connect('icon-press', Lang.bind(this, this._handle_help));
-        this.ui.settings.template.connect('changed', Lang.bind(this, this._handle_widget));
-        this.ui.settings.page.actor.add(this.ui.settings.template);
+        this.ui.settings.filename_template = new InputEntry('filename-template', this.settings.get_string('filename-template'), _("Filename template"), _("Screenshot filename template"));
+        this.ui.settings.filename_template.actor.set_orientation(Gtk.Orientation.VERTICAL);
+        this.ui.settings.filename_template._widget.secondary_icon_name = 'dialog-question-symbolic';
+        this.ui.settings.filename_template._widget.connect('icon-press', Lang.bind(this, this._handle_help));
+        this.ui.settings.filename_template.connect('changed', Lang.bind(this, this._handle_widget));
+        this.ui.settings.page.actor.add(this.ui.settings.filename_template);
 
         return this.ui.settings.page;
     },

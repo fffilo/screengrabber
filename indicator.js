@@ -157,7 +157,7 @@ const Base = new Lang.Class({
     _screenshot_flash: function(path, area) {
         let settings = this.settings.get_string('flash');
         let video = settings === 'both' || settings === 'video' ? area : false;
-        let audio = !(settings === 'both' || settings === 'video');
+        let audio = !(settings === 'both' || settings === 'audio');
         this.flash(video, audio);
 
         return path;

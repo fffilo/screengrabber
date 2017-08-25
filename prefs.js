@@ -126,7 +126,7 @@ const Widget = new GObject.Class({
         this.ui.settings.clipboard.connect('changed', Lang.bind(this, this._handle_widget));
         this.ui.settings.page.actor.add(this.ui.settings.clipboard);
 
-        this.ui.settings.flash = new InputComboBox('flash', this.settings.get_string('flash'), _("Flash effect"), _("Simulate flash effect on create screenshot"), { 'audio': _("Audio"), 'video': _("Video"), 'both': _("Both"), });
+        this.ui.settings.flash = new InputComboBox('flash', this.settings.get_string('flash'), _("Flash effect"), _("Simulate flash effect on create screenshot"), { 'none': _("None"), 'audio': _("Audio"), 'video': _("Video"), 'both': _("Both"), });
         this.ui.settings.flash.connect('changed', Lang.bind(this, this._handle_widget));
         this.ui.settings.page.actor.add(this.ui.settings.flash);
 

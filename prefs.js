@@ -10,6 +10,7 @@ const GdkPixbuf = imports.gi.GdkPixbuf;
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
 const File = Me.imports.file;
+const Provider = Me.imports.provider;
 const Icons = Me.imports.icons;
 const Settings = Me.imports.settings;
 const Translation = Me.imports.translation;
@@ -87,7 +88,7 @@ const Widget = new GObject.Class({
         let notebook = new Gtk.Notebook();
         this.ui = {};
         notebook.append_page(this._page_settings(), new Gtk.Label({ label: _("Settings"), }));
-        notebook.append_page(this._page_providers(), new Gtk.Label({ label: _("Providers"), }));
+        notebook.append_page(this._page_storage(), new Gtk.Label({ label: _("Storage"), }));
         notebook.append_page(this._page_keybinds(), new Gtk.Label({ label: _("Key Bindings"), }));
         notebook.append_page(this._page_about(), new Gtk.Label({ label: _("About"), }));
         this.add(notebook);
@@ -134,32 +135,31 @@ const Widget = new GObject.Class({
         this.ui.settings.shadows.connect('changed', Lang.bind(this, this._handle_widget));
         this.ui.settings.page.actor.add(this.ui.settings.shadows);
 
-        this.ui.settings.filename_template = new InputEntry('filename-template', this.settings.get_string('filename-template'), _("Filename template"), _("Screenshot filename template"));
-        this.ui.settings.filename_template.actor.set_orientation(Gtk.Orientation.VERTICAL);
-        this.ui.settings.filename_template._widget.secondary_icon_name = 'dialog-question-symbolic';
-        this.ui.settings.filename_template._widget.connect('icon-press', Lang.bind(this, this._handle_help));
-        this.ui.settings.filename_template.connect('changed', Lang.bind(this, this._handle_widget));
-        this.ui.settings.page.actor.add(this.ui.settings.filename_template);
-
         return this.ui.settings.page;
     },
 
     /**
-     * Create new providers page
+     * Create new storage page
      *
      * @return {Object}
      */
-    _page_providers: function() {
-        this.ui.providers = {};
-        this.ui.providers.page = this._page();
-        this.ui.providers.page.get_style_context().add_class('screengrabber-prefs-page-providers');
+    _page_storage: function() {
+        this.ui.storage = {};
+        this.ui.storage.page = this._page();
+        this.ui.storage.page.get_style_context().add_class('screengrabber-prefs-page-storage');
 
-        this.ui.providers.wip = new Label({ label: 'Work in progress...', });
-        this.ui.providers.wip.set_opacity(0.5);
-        this.ui.providers.page.actor.add(this.ui.providers.wip);
+        this.ui.storage.filename_template = new InputEntry('filename-template', this.settings.get_string('filename-template'), _("Filename template"), _("Screenshot filename template"));
+        this.ui.storage.filename_template.actor.set_orientation(Gtk.Orientation.VERTICAL);
+        this.ui.storage.filename_template._widget.secondary_icon_name = 'dialog-question-symbolic';
+        this.ui.storage.filename_template._widget.connect('icon-press', Lang.bind(this, this._handle_help));
+        this.ui.storage.filename_template.connect('changed', Lang.bind(this, this._handle_widget));
+        this.ui.storage.page.actor.add(this.ui.storage.filename_template);
 
-        // work in progress
-        return this.ui.providers.page;
+        this.ui.storage.upload_provider = new InputComboBox('upload-provider', this.settings.get_string('upload-provider'), _("Upload provider"), _("Upload provider"), Provider.list(true));
+        this.ui.storage.upload_provider.connect('changed', Lang.bind(this, this._handle_widget));
+        this.ui.storage.page.actor.add(this.ui.storage.upload_provider);
+
+        return this.ui.storage.page;
     },
 
     /**

@@ -10,7 +10,7 @@ const Signals = imports.signals;
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
 const File = Me.imports.file;
-const Upload = Me.imports.upload;
+const Provider = Me.imports.provider;
 
 /**
  * User agent
@@ -27,7 +27,7 @@ const USER_AGENT = '%s_v%s'.format(Me.metadata.name, Me.metadata.version);
  */
 const Base = new Lang.Class({
 
-    Name: 'Upload.Base',
+    Name: 'Provider.Base',
 
     /**
      * Provider webpage
@@ -41,14 +41,14 @@ const Base = new Lang.Class({
      *
      * @type {String}
      */
-    title: 'Dummy Upload',
+    title: 'Dummy Provider',
 
     /**
      * Description
      *
      * @type {String}
      */
-    desc: 'Dummy Upload',
+    desc: 'Dummy Provider',
 
     /**
      * API URL
@@ -219,7 +219,7 @@ const Base = new Lang.Class({
         let event = this._event(message);
         event.success = false;
         event.data = {
-            error: 'Unknown',
+            error: 'Unknown error',
         }
 
         return event;
@@ -324,7 +324,7 @@ Signals.addSignalMethods(Base.prototype);
  */
 const Imgur = new Lang.Class({
 
-    Name: 'Upload.Imgur',
+    Name: 'Provider.Imgur',
     Extends: Base,
 
     url: 'https://imgur.com',
@@ -363,7 +363,7 @@ const Imgur = new Lang.Class({
     _event_error: function(message) {
         let response = JSON.parse(message.response_body.data);
         let event = this.parent(message);
-        event.data.error = response.data.error.message || response.data.error || event.data.error || 'Unknown';
+        event.data.error = response.data.error.message || response.data.error || event.data.error;
 
         return event;
     },
@@ -388,7 +388,7 @@ const Imgur = new Lang.Class({
  */
 const Imgbin = new Lang.Class({
 
-    Name: 'Upload.Imgbin',
+    Name: 'Provider.Imgbin',
     Extends: Base,
 
     url: 'https://imagebin.ca',
@@ -435,7 +435,7 @@ const Imgbin = new Lang.Class({
  */
 const UploadsIm = new Lang.Class({
 
-    Name: 'Upload.UploadsIm',
+    Name: 'Provider.UploadsIm',
     Extends: Base,
 
     url: 'http://uploads.im',
@@ -460,7 +460,7 @@ const UploadsIm = new Lang.Class({
     _event_error: function(message) {
         let response = JSON.parse(message.response_body.data);
         let event = this.parent(message);
-        event.data.error = response.status_txt || event.data.error || 'Unknown';
+        event.data.error = response.status_txt || event.data.error;
 
         return event;
     },
@@ -499,7 +499,7 @@ const UploadsIm = new Lang.Class({
  */
 const AnonImage = new Lang.Class({
 
-    Name: 'Upload.AnonImage',
+    Name: 'Provider.AnonImage',
     Extends: Base,
 
     url: 'https://anonimage.net',
@@ -560,7 +560,7 @@ const AnonImage = new Lang.Class({
  */
 const Unsee = new Lang.Class({
 
-    Name: 'Upload.Unsee',
+    Name: 'Provider.Unsee',
     Extends: Base,
 
     url: 'https://unsee.cc',
@@ -588,7 +588,7 @@ const Unsee = new Lang.Class({
     _event_error: function(message) {
         let response = JSON.parse(message.response_body.data);
         let event = this.parent(message);
-        event.data.error = response.error || event.data.error || 'Unknown';
+        event.data.error = response.error || event.data.error;
 
         return event;
     },
@@ -601,18 +601,18 @@ const Unsee = new Lang.Class({
  * Notice: our data servers were terminated, we will add new ones ASAP and resume the service.
  * P.S. Never ever use servers from online.net - the only hosting provider in the world that terminates your servers without any notice ;)
  *
- * >>> curl -H "User-Agent: Screengrabber_v1" -F files[]="@test.png" https://d2.dropfile.to/upload
- * .................
+ * >>> curl -H "User-Agent: Screengrabber_v1" -F files[]="@test.png" https://d1.dropfile.to/upload
+ * {"files":["test.png","8FEBfnV","rDxB4mr","16372"],"status":0,"url":"https:\/\/dropfile.to\/8FEBfnV","access_key":"rDxB4mr"}
  *
- * >>> curl -H "User-Agent: Screengrabber_v1" -F invalid="@test.png" https://d2.dropfile.to/upload
- * .................
+ * >>> curl -H "User-Agent: Screengrabber_v1" -F invalid="@test.png" https://d1.dropfile.to/upload
+ * {"invalid_name":"test.png","invalid_content_type":"application\/octet-stream","invalid_path":"\/tmp\/0049509623","invalid_size":"16372","files":{"1":"M2snzGu","2":"f5Wu4Rv"},"status":2}
  *
- * >>> curl -H "User-Agent: Screengrabber_v1" -F files[]="@invalid.png" https://d2.dropfile.to/upload
- * .................
+ * >>> curl -H "User-Agent: Screengrabber_v1" -F files[]="@invalid.png" https://d1.dropfile.to/upload
+ * {"files":["invalid.png","HnvFFTu","YXJFxPo","14"],"status":0,"url":"https:\/\/dropfile.to\/HnvFFTu","access_key":"YXJFxPo"}
  *
  * @param  {Object}
  * @return {Object}
- * /
+ */
 const DropfileTo = new Lang.Class({
 
     Name: 'Upload.DropfileTo',
@@ -621,16 +621,27 @@ const DropfileTo = new Lang.Class({
     url: 'https://dropfile.to',
     title: 'Dropfile.to',
     desc: '',
-    api: 'https://d2.dropfile.to/upload',
+    api: 'https://d1.dropfile.to/upload',
 
     upload: function(path) {
-        let message = this._request_multipart({ 'files[]': '@' + path });
+        let message = this._request_multipart({ 'files[]': '' + path });
         this._queue(message);
     },
 
-    _handle_message_success: function(session, message, data) {
-        this.emit('done', JSON.parse(message.response_body.data).url);
-        global.log(Me.metadata.uuid, "success", JSON.parse(message.response_body.data).url);
+    _event_success: function(message) {
+        let response = JSON.parse(message.response_body.data);
+        if (!response.url)
+            return this._event_error(message);
+
+        let event = this.parent(message);
+        event.data.preview = response.url;
+        event.data.image = event.data.preview;
+
+        return event;
+    },
+
+    _event_error: function(message) {
+        throw '';
     },
 
 });
@@ -649,10 +660,10 @@ const DropfileTo = new Lang.Class({
  *
  * @param  {Object}
  * @return {Object}
- * /
+ */
 const Lutim = new Lang.Class({
 
-    Name: 'Upload.Lutim',
+    Name: 'Provider.Lutim',
     Extends: Base,
 
     url: 'https://lut.im',
@@ -689,7 +700,7 @@ const Lutim = new Lang.Class({
     _event_error: function(message) {
         let response = JSON.parse(message.response_body.data);
         let event = this.parent(message);
-        event.data.error = response.msg.msg || event.data.error || 'Unknown';
+        event.data.error = response.msg.msg || event.data.error;
 
         return event;
     },
@@ -747,7 +758,7 @@ const Lutim = new Lang.Class({
  */
 const PicPaste = new Lang.Class({
 
-    Name: 'Upload.PicPaste',
+    Name: 'Provider.PicPaste',
     Extends: Base,
 
     url: 'http://picpaste.com',
@@ -784,7 +795,7 @@ const PicPaste = new Lang.Class({
 
     _event_error: function(message) {
         let event = this.parent(message);
-        event.data.error = message.response_headers.get('X-salgar-err') || event.data.error || 'Unknown';
+        event.data.error = message.response_headers.get('X-salgar-err') || event.data.error;
 
         return event;
     },
@@ -803,14 +814,60 @@ const PicPaste = new Lang.Class({
 });
 
 /**
- * Provider exists
+ * Get all providers
+ *
+ * @param  {Boolean} as_obj
+ * @return {Object}
+ */
+const list = function(as_obj) {
+    let result = as_obj ? {} : [];
+    for (let name in Provider) {
+        if (typeof Provider[name] === 'function' && Provider[name].__super__ === Base) {
+            if (as_obj)
+                result[name] = name;
+            else
+                result.push(name);
+        }
+    }
+
+    return result;
+}
+
+/**
+ * Get provider meta
+ *
+ * @param  {String} name
+ * @param  {String} key  (optional)
+ * @return {Object}
+ */
+const get_meta = function(name, key) {
+    if (typeof Provider[name] === 'function' && Provider[name].__super__ === Base) {
+        let provider = Provider[name].prototype;
+        let result = {
+            url: provider.url,
+            title: provider.title,
+            desc: provider.desc,
+            api: provider.api,
+        }
+
+        if (key)
+            return result[key];
+
+        return result;
+    }
+
+    return null;
+}
+
+/**
+ * Get new provider instance
  *
  * @param  {String} name
  * @return {Object}
  */
 const new_by_name = function(name) {
-    if (Upload[name] && Upload[name].prototype && Upload[name].prototype.constructor)
-        return new Upload[name]();
+    if (typeof Provider[name] === 'function' && Provider[name].__super__ === Base)
+        return new Provider[name]();
 
     return null;
 }

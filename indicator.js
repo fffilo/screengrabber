@@ -19,7 +19,7 @@ const Clipboard = Me.imports.clipboard;
 const Notification = Me.imports.notification;
 const Container = Me.imports.container;
 const Grabber = Me.imports.grabber;
-const Upload = Me.imports.upload;
+const Provider = Me.imports.provider;
 const Icons = Me.imports.icons;
 const Settings = Me.imports.settings;
 const Translation = Me.imports.translation;
@@ -176,7 +176,7 @@ const Base = new Lang.Class({
             path = result;
         }
 
-        if (notifications && !Upload.new_by_name(provider))
+        if (notifications && !Provider.new_by_name(provider))
             this.notification.show(Me.metadata.name, File.to_uri(path));
 
         if (clipboard === 'uri')
@@ -189,10 +189,10 @@ const Base = new Lang.Class({
 
     _screenshot_upload: function(path, area) {
         let provider = this.settings.get_string('upload-provider');
-        let upload = Upload.new_by_name(provider);
-        if (upload) {
-            upload.connect('done', Lang.bind(this, this._handle_upload));
-            upload.upload(path);
+        let uploader = Provider.new_by_name(provider);
+        if (uploader) {
+            uploader.connect('done', Lang.bind(this, this._handle_provider));
+            uploader.upload(path);
         }
 
         return path;
@@ -229,13 +229,13 @@ const Base = new Lang.Class({
     },
 
     /**
-     * Uploader done signal event handler
+     * Provider done signal event handler
      *
      * @param  {Object} actor
      * @param  {Object} event
      * @return {Void}
      */
-    _handle_upload: function(actor, event) {
+    _handle_provider: function(actor, event) {
         let notifications = this.settings.get_boolean('notifications');
         let clipboard = this.settings.get_string('clipboard');
         let uri = event.data.preview || event.data.error || event.status.description;

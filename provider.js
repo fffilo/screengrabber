@@ -814,6 +814,23 @@ const PicPaste = new Lang.Class({
 });
 
 /**
+ * Check if provider is extended
+ * from Base
+ *
+ * @param  {String}  name
+ * @return {Boolean}
+ */
+const test = function(name) {
+    let base = Provider[name];
+    while (typeof base === 'function') {
+        if ((base = base.__super__) === Base)
+            return true;
+    }
+
+    return false;
+}
+
+/**
  * Get all providers
  *
  * @param  {Boolean} as_obj
@@ -822,7 +839,7 @@ const PicPaste = new Lang.Class({
 const list = function(as_obj) {
     let result = as_obj ? {} : [];
     for (let name in Provider) {
-        if (typeof Provider[name] === 'function' && Provider[name].__super__ === Base) {
+        if (test(name)) {
             if (as_obj)
                 result[name] = name;
             else
@@ -841,7 +858,7 @@ const list = function(as_obj) {
  * @return {Object}
  */
 const get_meta = function(name, key) {
-    if (typeof Provider[name] === 'function' && Provider[name].__super__ === Base) {
+    if (test(name)) {
         let provider = Provider[name].prototype;
         let result = {
             url: provider.url,
@@ -866,7 +883,7 @@ const get_meta = function(name, key) {
  * @return {Object}
  */
 const new_by_name = function(name) {
-    if (typeof Provider[name] === 'function' && Provider[name].__super__ === Base)
+    if (test(name))
         return new Provider[name]();
 
     return null;

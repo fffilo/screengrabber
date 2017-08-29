@@ -173,15 +173,15 @@ const Base = new Lang.Class({
     /**
      * Event object
      *
-     * @param  {Object} message
+     * @param  {Object} message (optional)
      * @return {Object}
      */
     _event: function(message) {
-        return {
+        let result = {
             success: null,
             status: {
-                code: message.status_code,
-                description: Soup.Status.get_phrase(message.status_code),
+                code: null,
+                description: null,
             },
             provider: {
                 title: this.title,
@@ -189,12 +189,19 @@ const Base = new Lang.Class({
             },
             data: {},
         }
+
+        if (message) {
+            result.status.code = message.status_code;
+            result.status.description = Soup.Status.get_phrase(message.status_code)
+        }
+
+        return result;
     },
 
     /**
      * Event (success) object
      *
-     * @param  {Object} message
+     * @param  {Object} message (optional)
      * @return {Object}
      */
     _event_success: function(message) {
@@ -212,7 +219,7 @@ const Base = new Lang.Class({
     /**
      * Event (error) object
      *
-     * @param  {Object} message
+     * @param  {Object} message (optional)
      * @return {Object}
      */
     _event_error: function(message) {
@@ -306,6 +313,32 @@ const Base = new Lang.Class({
 });
 
 Signals.addSignalMethods(Base.prototype);
+
+/**
+ * Provider None constructor
+ *
+ * @param  {Object}
+ * @return {Object}
+ */
+const None = new Lang.Class({
+
+    Name: 'Provider.None',
+    Extends: Base,
+
+    url: '',
+    title: 'none',
+    desc: '',
+    api: '',
+
+    upload: function(path) {
+        let event = this._event();
+        event.data.preview = File.to_uri(path);
+        event.data.image = event.data.preview;
+
+        return this.emit('done', event);
+    },
+
+});
 
 /**
  * Provider Imgur constructor

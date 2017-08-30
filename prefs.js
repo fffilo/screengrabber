@@ -183,6 +183,7 @@ const Widget = new GObject.Class({
         this.ui.keybinds.treeview = new Gtk.TreeView({
             expand: true,
             model: model,
+            enable_search: false,
         });
         this.ui.keybinds.page.actor.add(this.ui.keybinds.treeview);
 

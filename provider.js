@@ -58,6 +58,13 @@ const Base = new Lang.Class({
     api: 'https://api.dummy.org/v1',
 
     /**
+     * Logo image
+     *
+     * @type {String}
+     */
+    logo: 'screengrabber-provider-none-symbolic',
+
+    /**
      * Constructor
      *
      * @return {Void}
@@ -326,8 +333,8 @@ const None = new Lang.Class({
     Extends: Base,
 
     url: '',
-    title: 'none',
-    desc: '',
+    title: '(none)',
+    desc: 'Do not upload image',
     api: '',
 
     upload: function(path) {
@@ -364,6 +371,7 @@ const Imgur = new Lang.Class({
     title: 'imgur',
     desc: 'The most awesome images on the Internet',
     api: 'https://api.imgur.com/3/image',
+    logo: 'screengrabber-provider-imgur-symbolic',
     clientId: '47b3024ef07c33c',
 
     upload: function(path) {
@@ -428,6 +436,7 @@ const Imgbin = new Lang.Class({
     title: 'imgbin',
     desc: 'Somewhere to Store Random Things',
     api: 'https://imagebin.ca/upload.php',
+    logo: 'screengrabber-provider-imagebin-symbolic',
 
     upload: function(path) {
         let message = this._request_multipart({ file: '@' + path });
@@ -475,6 +484,7 @@ const UploadsIm = new Lang.Class({
     title: 'uploads.im',
     desc: 'Uploads.im Image Hosting. Would you like to upload an image?',
     api: 'http://uploads.im/api',
+    logo: 'screengrabber-provider-uploadsim-symbolic',
 
     upload: function(path) {
         let message = this._request_multipart({ file: '@' + path });
@@ -539,6 +549,7 @@ const AnonImage = new Lang.Class({
     title: 'AnonImage',
     desc: 'Anonymous Image Hosting',
     api: 'https://anonimage.net/upload_magick.php',
+    logo: 'screengrabber-provider-anonimage-symbolic',
 
     upload: function(path) {
         this._got_headers = false;
@@ -600,6 +611,7 @@ const Unsee = new Lang.Class({
     title: 'Unsee',
     desc: 'Free online private photos sharing',
     api: 'https://unsee.cc/upload',
+    logo: 'screengrabber-provider-unsee-symbolic',
 
     upload: function(path) {
         let message = this._request_multipart({ 'image[]': '@' + path, time: '86400' });
@@ -653,8 +665,9 @@ const DropfileTo = new Lang.Class({
 
     url: 'https://dropfile.to',
     title: 'Dropfile.to',
-    desc: '',
+    desc: 'Simple Secure Free Anonymous',
     api: 'https://d1.dropfile.to/upload',
+    logo: 'screengrabber-provider-dropfileto-symbolic',
 
     upload: function(path) {
         let message = this._request_multipart({ 'files[]': '' + path });
@@ -703,6 +716,7 @@ const Lutim = new Lang.Class({
     title: 'Lutim',
     desc: 'Let\'s Upload That Image',
     api: 'https://lut.im',
+    logo: 'screengrabber-provider-lutim-symbolic',
 
     upload: function(path) {
         let params = {
@@ -798,6 +812,7 @@ const PicPaste = new Lang.Class({
     title: 'PicPaste',
     desc: 'Put your pictures online, easy and quick!',
     api: 'http://picpaste.com/upload.php',
+    logo: 'screengrabber-provider-picpaste-symbolic',
 
     upload: function(path) {
         this._got_headers = false;

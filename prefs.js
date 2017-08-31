@@ -6,7 +6,6 @@ const Signals = imports.signals;
 const GObject = imports.gi.GObject;
 const Gtk = imports.gi.Gtk;
 const Gdk = imports.gi.Gdk;
-const GdkPixbuf = imports.gi.GdkPixbuf;
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
 const File = Me.imports.file;
@@ -23,6 +22,7 @@ const _ = Translation.translate;
  */
 function init() {
     Translation.init();
+    Icons.init();
 }
 
 /**
@@ -159,6 +159,10 @@ const Widget = new GObject.Class({
         this.ui.storage.upload_provider.connect('changed', Lang.bind(this, this._handle_widget));
         this.ui.storage.page.actor.add(this.ui.storage.upload_provider);
 
+        this.ui.storage.form = new ProviderForm();
+        this.ui.storage.form.provider = this.settings.get_string('upload-provider');
+        this.ui.storage.page.actor.add(this.ui.storage.form);
+
         return this.ui.storage.page;
     },
 
@@ -244,8 +248,7 @@ const Widget = new GObject.Class({
         this.ui.about.title.get_style_context().add_class('screengrabber-prefs-page-about-title');
         this.ui.about.page.actor.add(this.ui.about.title);
 
-        let ico = GdkPixbuf.Pixbuf.new_from_file_at_scale(Me.path + '/assets/%s.svg'.format(Icons.DEFAULT), 64, 64, null);
-        this.ui.about.icon = Gtk.Image.new_from_pixbuf(ico);
+        this.ui.about.icon = new Gtk.Image({ icon_name: Icons.DEFAULT, pixel_size: 64, });
         this.ui.about.icon.get_style_context().add_class('screengrabber-prefs-page-about-icon');
         this.ui.about.page.actor.add(this.ui.about.icon);
 
@@ -301,11 +304,12 @@ const Widget = new GObject.Class({
      * Settings changed event handler
      *
      * @param  {Object} actor
-     * @param  {Object} event
+     * @param  {String} key
      * @return {Void}
      */
-    _handle_settings: function(actor, event) {
-        // pass
+    _handle_settings: function(actor, key) {
+        if (key === 'upload-provider')
+            this.ui.storage.form.provider = this.settings.get_string(key);
     },
 
     /**
@@ -743,5 +747,58 @@ const InputEntry = new GObject.Class({
     },
 
     /* --- */
+
+});
+
+/**
+ * Provider Form constructor
+ * extends Box
+ *
+ * @param  {Object}
+ * @return {Object}
+ */
+const ProviderForm = new GObject.Class({
+
+    Name: 'Prefs.ProviderForm',
+    GTypeName: 'ScreenGrabberPrefsProviderForm',
+    Extends: Box,
+
+    _init: function() {
+        this.parent();
+
+        this._provider = 'None';
+
+        this._title = new Label({ label: '', xalign: 0.5 });
+        this._logo = new Gtk.Image({ icon_name: Icons.DEFAULT });
+        this.actor.add(this._logo);
+        this._desc = new Label({ label: '', xalign: 0.5 });
+        this.actor.add(this._desc);
+        this._url = new Label({ label: '', xalign: 0.5 });
+        this.actor.add(this._url);
+
+        this.refresh();
+    },
+
+    refresh: function() {
+        let provider = Provider.new_by_name(this.provider);
+
+        this._title.label = provider.title;
+        this._desc.label = provider.desc;
+        this._url.label = '<a href="%s">%s</a>'.format(provider.url, provider.url);
+        this._logo.file = Me.path + '/assets/%s.svg'.format(provider.logo);
+    },
+
+    get provider() {
+        return this._provider;
+    },
+
+    set provider(value) {
+        if (Provider.test(value))
+            this._provider = value;
+        else
+            this._provider = 'None';
+
+        this.refresh();
+    },
 
 });
